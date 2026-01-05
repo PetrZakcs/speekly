@@ -23,7 +23,15 @@
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Speekly - Speech Therapy",
+      "shortName": "Speekly",
+      "lang": "en",
+      "display": "standalone",
+      "backgroundColor": "#0F2822",
+      "themeColor": "#0F2822",
+      "startUrl": "/",
+      "orientation": "portrait"
     }
   }
 }
