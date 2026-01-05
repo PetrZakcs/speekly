@@ -14,7 +14,9 @@ import {
   Linking,
   Animated,
   Easing,
-  Vibration
+  Easing,
+  Vibration,
+  Image
 } from 'react-native';
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -242,6 +244,19 @@ const LandingScreen = ({ t, onGetStarted }) => {
     <ScrollView style={styles.screenScroll}>
 
       <View style={{ maxWidth: 1200, alignSelf: 'center', width: '100%' }}>
+
+        {/* 0. Header with Logo */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 20, marginBottom: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Image
+              source={require('./assets/speekly-logo.jpg')}
+              style={{ width: 40, height: 40, borderRadius: 8 }}
+              resizeMode="contain"
+            />
+            <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 24, fontWeight: 'bold' }}>Speekly</Text>
+          </View>
+          {/* Optional: Login/Start Button could go here */}
+        </View>
 
         {/* 1. Hero Section */}
         <View style={[styles.heroSection, heroStyle]}>
