@@ -14,7 +14,6 @@ import {
   Linking,
   Animated,
   Easing,
-  Easing,
   Vibration,
   Image
 } from 'react-native';
