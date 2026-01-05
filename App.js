@@ -260,7 +260,7 @@ const LandingScreen = ({ t, onGetStarted }) => {
 
         {/* 1. Hero Section */}
         <View style={[styles.heroSection, heroStyle]}>
-          <View style={styles.heroBadge}><Text style={styles.heroBadgeText}>✨ 1st AI Speech Therapist</Text></View>
+          <View style={styles.heroBadge}><Text style={styles.heroBadgeText}>✨ 1st AI Speech Therapist 🚀</Text></View>
           <Text style={[styles.heroTitle, isDesktop && { fontSize: 64, lineHeight: 72 }]}>{t('hero_title')} <Text style={{ color: COLORS.ACCENT_LIME }}>{t('hero_title_hl')}</Text></Text>
           <Text style={[styles.heroSub, isDesktop && { fontSize: 20 }]}>{t('hero_sub')}</Text>
 
