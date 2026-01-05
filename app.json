@@ -23,7 +23,7 @@
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.ico",
+      "favicon": "./assets/app-icon.jpg",
       "name": "Speekly - Speech Therapy",
       "shortName": "Speekly",
       "lang": "en",
