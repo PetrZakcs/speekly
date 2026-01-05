@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from './lib/supabase';
 import { StatusBar } from 'expo-status-bar';
 
 // --- Theme Constants (Forest Theme) ---
@@ -1161,6 +1162,8 @@ const SCENARIOS = {
 // For client-side demos only. In production, use a backend proxy.
 const SYSTEM_API_KEY = "";
 
+import { SpeedInsights } from "@vercel/speed-insights/react";
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [currentScreen, setCurrentScreen] = useState('landing'); // landing | checkout | app
@@ -1229,6 +1232,22 @@ export default function App() {
     await AsyncStorage.setItem('last_practice_date', today);
 
     Alert.alert("🔥 Streak Updated!", `You're on a ${newStreak} day streak! Keep it up!`);
+
+    // SYNC TO SUPABASE (Cloud Backup)
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          streak: newStreak,
+          last_practice: today
+        });
+      }
+    } catch (e) {
+      console.log('Online sync failed (offline?)', e);
+    }
+
+    Alert.alert("🔥 Streak Updated!", `You're on a ${newStreak} day streak! Keep it up!`);
   };
 
   const t = (k) => DICTIONARY[language][k] || k;
@@ -1265,6 +1284,7 @@ export default function App() {
   return (
     <MobileContainer fullWidth={true}>
       <StatusBar style="light" />
+      {Platform.OS === 'web' && <SpeedInsights />}
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.contentContainer}>
           <View style={{ maxWidth: 1000, alignSelf: 'center', width: '100%', flex: 1 }}>
