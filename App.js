@@ -26,7 +26,7 @@ const COLORS = {
   BG_CARD: '#1A382F',       // Lighter Green Surface
   ACCENT_LIME: '#D4EE9F',   // Primary Action
   ACCENT_ORANGE: '#F97316', // Alerts/Highlights
-  TEXT_WHITE: '#FFFFFF',
+  TEXT_WHITE: '#F5F5F',
   TEXT_SEC: '#AABEB8',      // Muted Green-Grey
   TEXT_DARK: '#0F2822',     // Text on Lime
   MIC_BG: '#D4EE9F',
