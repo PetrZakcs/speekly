@@ -1,20 +1,1424 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Platform,
+  SafeAreaView,
+  Modal,
+  Alert,
+  Dimensions,
+  Linking,
+  Animated,
+  Easing,
+  Vibration
+} from 'react-native';
+import { Audio } from 'expo-av';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+
+// --- Theme Constants (Forest Theme) ---
+const COLORS = {
+  BG_DARK: '#0F2822',       // Deep Forest Green
+  BG_CARD: '#1A382F',       // Lighter Green Surface
+  ACCENT_LIME: '#D4EE9F',   // Primary Action
+  ACCENT_ORANGE: '#F97316', // Alerts/Highlights
+  TEXT_WHITE: '#FFFFFF',
+  TEXT_SEC: '#AABEB8',      // Muted Green-Grey
+  TEXT_DARK: '#0F2822',     // Text on Lime
+  MIC_BG: '#D4EE9F',
+  MIC_ICON: '#1A382F'
+};
+
+// --- Localization ---
+const DICTIONARY = {
+  cz: {
+    hello: 'Ahoj',
+    how_feel: 'Jak se dnes cítíš?',
+    recommendation: 'Tip pro lepší řeč',
+    start_breath: 'Uklidni svou mysl před mluvením',
+    start_ex: 'Začít cvičení',
+    days_row: 'Dní cvičení',
+    ex_week: 'Relace týdně',
+    practice_title: 'Terapie řeči',
+    diff_text: 'Jiné cvičení',
+    press_record: 'Stiskni pro analýzu',
+    no_rec: 'Zatím žádné nahrávky',
+    tips: 'Tipy logopeda',
+    relax_title: 'Dechové techniky',
+    relax_sub: 'Získej kontrolu nad svým dechem',
+    instructions: 'Instrukce',
+    home: 'Domů',
+    relax: 'Relax',
+    practice: 'Terapie',
+    settings: 'Nastavení',
+    mic_perm: 'Povolení mikrofonu nutné',
+    login_api: 'Zadej API Klíč (OpenAI)',
+    // Landing
+    hero_title: 'Mluvte zase',
+    hero_title_hl: 'Sebevědomě',
+    hero_sub: 'Překonejte koktání a úzkost s osobním AI logopedem.',
+    start_journey: 'Začít terapii →',
+    why_us: 'Proč Speekly?',
+    // Scenarios & Practice
+    read_mode: '📖 Čtení a Analýza',
+    chat_mode: '💬 Hraní Rolí (Chat)',
+    scen_job: 'Pohovor',
+    scen_coffee: 'Objednávka',
+    scen_social: 'Small Talk',
+    scen_custom: 'Vlastní',
+    custom_placeholder: 'Např. Žádost o zvýšení platu...',
+    custom_desc: 'Popiš situaci výše a stiskni mikrofon!',
+    // Relax
+    rel_diaphragm: 'Brániční dýchání',
+    rel_pmr: 'Uvolnění svalů',
+    rel_jaw: 'Uvolnění čelisti',
+    rel_viz: 'Vizualizace',
+    rel_vocal: 'Hlasová rozcvička', // New
+    add_custom: 'Přidat vlastní metodu',
+    tmj_warning: '⚠️ Pozor: Buďte opatrní, pokud máte problémy s čelistním kloubem (TMJ).', // New
+    disclaimer: 'Tato aplikace nenahrazuje klinickou péči. Slouží k tréninku, ne k léčbě.', // New
+    // Checkout
+    checkout_title: 'Bezpečná platba',
+    back_home: 'Zpět domů',
+    order_sum: 'Shrnutí objednávky',
+    plan_name: 'Doživotní Plán',
+    one_time: 'Jednorázová platba. Žádné poplatky.',
+    create_acc: 'Vytvořit účet',
+    pay_method: 'Platební metoda',
+    pay_btn: 'Zaplatit $100 přes Stripe',
+    redirect_note: 'Budete přesměrováni na bránu Stripe',
+  },
+  en: {
+    hello: 'Hello',
+    how_feel: 'How is your speech today?',
+    recommendation: 'Today\'s Activity',
+    start_breath: 'Calm your mind before speaking',
+    start_ex: 'Start Exercise',
+    days_row: 'Day Streak',
+    ex_week: 'Sessions',
+    practice_title: 'Speech Therapy',
+    diff_text: 'Next Exercise',
+    press_record: 'Press to Analyze',
+    no_rec: 'No recordings yet',
+    tips: 'Therapist Tips',
+    relax_title: 'Breathing Techniques',
+    relax_sub: 'Gain control over your breath',
+    instructions: 'Instructions',
+    home: 'Home',
+    relax: 'Relax',
+    practice: 'Therapy',
+    settings: 'Settings',
+    mic_perm: 'Microphone permission required',
+    login_api: 'Enter AI API Key',
+    // Landing
+    hero_title: 'Speak with',
+    hero_title_hl: 'Confidence',
+    hero_sub: 'Overcome stuttering and anxiety with your personal AI Speech Therapist.',
+    start_journey: 'Start Therapy Journey →',
+    why_us: 'Why Speekly?',
+    // Scenarios & Practice
+    read_mode: '📖 Read & Analyze',
+    chat_mode: '💬 Roleplay Chat',
+    scen_job: 'Job Interview',
+    scen_coffee: 'Ordering Coffee',
+    scen_social: 'Small Talk',
+    scen_custom: 'Custom Topic',
+    custom_placeholder: 'e.g. Asking my boss for a raise...',
+    custom_desc: 'Type a description above, then press the mic to start!',
+    // Relax
+    rel_diaphragm: 'Deep Diaphragm',
+    rel_pmr: 'Muscle Release',
+    rel_jaw: 'Jaw Loosening',
+    rel_viz: 'Visualization',
+    rel_vocal: 'Vocal Warm-up', // New
+    add_custom: 'Add Your Own Method',
+    tmj_warning: '⚠️ Caution: Be gentle if you have TMJ (Jaw Joint) issues.', // New
+    disclaimer: 'This app is not a replacement for clinical therapy. It is a training tool.', // New
+    // Checkout
+    checkout_title: 'Secure Checkout',
+    back_home: 'Back to Home',
+    order_sum: 'Order Summary',
+    plan_name: 'Lifetime Therapy Plan',
+    one_time: 'Onetime payment. No recurring fees.',
+    create_acc: 'Create Account',
+    pay_method: 'Payment Method',
+    pay_btn: 'Pay $100 with Stripe',
+    redirect_note: 'You will be redirected to secure Stripe Checkout',
+  }
+};
+
+const TIPS_DATA = [
+  'Speak slowly and intentionally',
+  'It is okay to pause and breathe',
+  'Focus on the flow, not perfection',
+  'Soft contact on consonants',
+  'Visualize successful speaking'
+];
+
+const RELAX_TECHNIQUES = [
+  {
+    id: 1, title: 'Deep Diaphragm', time: 5, timeStr: '5 minutes', type: 'deep',
+    instructions: [
+      "Place one hand on your chest, one on your belly.",
+      "Breathe in deeply through your nose.",
+      "Feel only your belly rise, not your chest.",
+      "Exhale slowly through pursed lips."
+    ]
+  },
+  {
+    id: 2, title: 'Muscle Release (PMR)', time: 10, timeStr: '10 minutes', type: 'body',
+    instructions: [
+      "Tense your toes for 5 seconds.",
+      "Release and feel the tension leave.",
+      "Move to your thighs, stomach, then hands.",
+      "Finally tense and release your face muscles."
+    ]
+  },
+  {
+    id: 3, title: 'Jaw & Face Loosening', time: 3, timeStr: '3 minutes', type: 'physical',
+    instructions: [
+      "Gently chew with your mouth closed (fake chewing).",
+      "Open your jaw wide, then relax.",
+      "Massage the masseter muscles (cheeks).",
+      "Flutter your lips (brrr sound) to relax them."
+    ]
+  },
+  {
+    id: 4, title: 'Confidence Visualization', time: 5, timeStr: '5 minutes', type: 'mental',
+    instructions: [
+      "Close your eyes. Picture the room/stage.",
+      "See yourself smiling and standing tall.",
+      "Visualize words flowing smoothly.",
+      "Feel the audience nodding in agreement."
+    ]
+  }
+];
+
+const PRACTICE_SENTENCES = [
+  "Peter Piper picked a peck of pickled peppers.",
+  "She sells seashells by the seashore.",
+  "I am calm, confident, and clear when I speak.",
+  "My voice is strong and my words flow freely.",
+  "Around the rugged rocks the ragged rascal ran."
+];
+
+const CONVERSATION_SCENARIOS = [
+  { id: 'job', title: 'Job Interview', icon: '💼', prompt: "You are a professional HR manager interviewing the user for a job. Ask standard interview questions. Keep replies short." },
+  { id: 'coffee', title: 'Ordering Coffee', icon: '☕', prompt: "You are a busy barista at a coffee shop. Ask the user what they want to order. Be polite but quick." },
+  { id: 'social', title: 'Small Talk', icon: '👋', prompt: "You are a friendly neighbor meeting the user at the mailbox. Make casual small talk about the weather or weekend." },
+  { id: 'custom', title: 'Custom Topic', icon: '✨', prompt: "You are a helpful conversation partner. Discuss whatever topic the user brings up." }
+];
+
+// --- Components ---
+
+// Mobile Container for Web (Responsive)
+const MobileContainer = ({ children, fullWidth = false }) => {
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.webContainer}>
+        <View style={[styles.mobileWrapper, fullWidth && styles.webWrapperFull]}>
+          {children}
+        </View>
+      </View>
+    );
+  }
+  return <View style={{ flex: 1, backgroundColor: COLORS.BG_DARK }}>{children}</View>;
+};
+
+const LandingScreen = ({ t, onGetStarted }) => {
+  const { width } = Dimensions.get('window');
+  const isDesktop = width > 800;
+
+  const gridStyle = isDesktop ? { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 20 } : {};
+  const cardStyle = isDesktop ? { width: '30%', minWidth: 300, marginBottom: 0 } : { width: '100%', marginBottom: 16 };
+  const heroStyle = isDesktop ? { maxWidth: 800, alignSelf: 'center' } : {};
+
+  return (
+    <ScrollView style={styles.screenScroll}>
+
+      <View style={{ maxWidth: 1200, alignSelf: 'center', width: '100%' }}>
+
+        {/* 1. Hero Section */}
+        <View style={[styles.heroSection, heroStyle]}>
+          <View style={styles.heroBadge}><Text style={styles.heroBadgeText}>✨ 1st AI Speech Therapist</Text></View>
+          <Text style={[styles.heroTitle, isDesktop && { fontSize: 64, lineHeight: 72 }]}>{t('hero_title')} <Text style={{ color: COLORS.ACCENT_LIME }}>{t('hero_title_hl')}</Text></Text>
+          <Text style={[styles.heroSub, isDesktop && { fontSize: 20 }]}>{t('hero_sub')}</Text>
+
+          <TouchableOpacity style={[styles.heroButton, isDesktop && { width: 'auto', paddingHorizontal: 60 }]} onPress={onGetStarted}>
+            <Text style={styles.heroButtonText}>{t('start_journey')}</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.heroNote}>Helping 10,000+ people find their voice</Text>
+        </View>
+
+        {/* 2. Benefits Grid */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionHeader}>{t('why_us')}</Text>
+          <View style={gridStyle}>
+            <View style={[styles.benefitCard, cardStyle]}>
+              <Text style={styles.benefitIcon}>🛡️</Text>
+              <Text style={styles.benefitTitle}>Safe Space</Text>
+              <Text style={styles.benefitDesc}>No judgment, no pressure. Practice at your own pace without the fear of public speaking.</Text>
+            </View>
+            <View style={[styles.benefitCard, cardStyle]}>
+              <Text style={styles.benefitIcon}>🗣️</Text>
+              <Text style={styles.benefitTitle}>Articulation Mastery</Text>
+              <Text style={styles.benefitDesc}>Personalized exercises for tongue twisters, pronunciation, and pacing control.</Text>
+            </View>
+            <View style={[styles.benefitCard, cardStyle]}>
+              <Text style={styles.benefitIcon}>🌬️</Text>
+              <Text style={styles.benefitTitle}>Anxiety Control</Text>
+              <Text style={styles.benefitDesc}>Integrated breathing and relaxation techniques to calm your nerves before you speak.</Text>
+            </View>
+            <View style={[styles.benefitCard, cardStyle, { borderColor: COLORS.ACCENT_ORANGE }]}>
+              <Text style={styles.benefitIcon}>🚨</Text>
+              <Text style={[styles.benefitTitle, { color: COLORS.ACCENT_ORANGE }]}>SOS Panic Button</Text>
+              <Text style={styles.benefitDesc}>Immediate help for unexpected speaking events (exams, presentations). Calm down in seconds.</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 3. Process Section */}
+        <View style={styles.processSection}>
+          <Text style={styles.sectionHeader}>How It Works</Text>
+          <View style={gridStyle}>
+            <View style={[styles.stepRow, cardStyle, isDesktop && { flexDirection: 'column', alignItems: 'center', textAlign: 'center' }]}>
+              <View style={[styles.stepNumber, isDesktop && { marginBottom: 16, marginRight: 0 }]}><Text style={styles.stepNumText}>1</Text></View>
+              <View style={{ flex: 1 }}><Text style={[styles.stepTitle, isDesktop && { textAlign: 'center' }]}>Warm Up</Text><Text style={[styles.stepDesc, isDesktop && { textAlign: 'center' }]}>Start with a 3-minute guided breathing exercise.</Text></View>
+            </View>
+            <View style={[styles.stepRow, cardStyle, isDesktop && { flexDirection: 'column', alignItems: 'center', textAlign: 'center' }]}>
+              <View style={[styles.stepNumber, isDesktop && { marginBottom: 16, marginRight: 0 }]}><Text style={styles.stepNumText}>2</Text></View>
+              <View style={{ flex: 1 }}><Text style={[styles.stepTitle, isDesktop && { textAlign: 'center' }]}>Practice Speech</Text><Text style={[styles.stepDesc, isDesktop && { textAlign: 'center' }]}>Read specialized texts or talk freely to the AI.</Text></View>
+            </View>
+            <View style={[styles.stepRow, cardStyle, isDesktop && { flexDirection: 'column', alignItems: 'center', textAlign: 'center' }]}>
+              <View style={[styles.stepNumber, isDesktop && { marginBottom: 16, marginRight: 0 }]}><Text style={styles.stepNumText}>3</Text></View>
+              <View style={{ flex: 1 }}><Text style={[styles.stepTitle, isDesktop && { textAlign: 'center' }]}>Analysis & Support</Text><Text style={[styles.stepDesc, isDesktop && { textAlign: 'center' }]}>Get kind feedback on your fluency and clarity.</Text></View>
+            </View>
+          </View>
+        </View>
+
+        {/* 4. Testimonials */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionHeader}>Success Stories</Text>
+          <View style={styles.testimonialCard}>
+            <Text style={[styles.quote, isDesktop && { textAlign: 'center', fontSize: 24 }]}>"I've struggled with stuttering all my life. Speekly gave me the confidence to finally speak up in meetings."</Text>
+            <Text style={[styles.author, isDesktop && { textAlign: 'center' }]}>- Michael, Student</Text>
+            <Text style={[styles.stars, isDesktop && { textAlign: 'center' }]}>⭐⭐⭐⭐⭐</Text>
+          </View>
+        </View>
+
+        {/* 5. Lifetime Offer */}
+        <View style={[styles.offerContainer, isDesktop && { maxWidth: 600, alignSelf: 'center' }]}>
+          <View style={styles.offerBadge}><Text style={styles.offerBadgeText}>LIMITED TIME OFFER</Text></View>
+          <Text style={styles.offerTitle}>Lifetime Therapy</Text>
+          <Text style={styles.offerPrice}>$100 <Text style={styles.offerOriginal}>/ one-time</Text></Text>
+
+          <View style={styles.checkList}>
+            <Text style={styles.checkItem}>✅ Unlimited AI Therapy Sessions</Text>
+            <Text style={styles.checkItem}>✅ Private & Secure Environment</Text>
+            <Text style={styles.checkItem}>✅ Advanced Progress Tracking</Text>
+            <Text style={styles.checkItem}>✅ Fraction of the cost of real therapy</Text>
+          </View>
+
+          <TouchableOpacity style={styles.offerButton} onPress={onGetStarted}>
+            <Text style={styles.offerButtonText}>Get Lifetime Access Now</Text>
+          </TouchableOpacity>
+          <Text style={styles.guarantee}>30-day money-back guarantee</Text>
+        </View>
+
+        <View style={{ height: 50 }} />
+      </View>
+    </ScrollView>
+  );
+};
+
+// Bottom Tab Bar
+const Navbar = ({ activeTab, onTabChange, t }) => (
+  <View style={styles.navbar}>
+    <TouchableOpacity style={styles.navItem} onPress={() => onTabChange('home')}>
+      <Text style={[styles.navIcon, activeTab === 'home' && styles.navActive]}>🏠</Text>
+      <Text style={[styles.navText, activeTab === 'home' && styles.navActiveText]}>{t('home')}</Text>
+    </TouchableOpacity>
+    <TouchableOpacity style={styles.navItem} onPress={() => onTabChange('relax')}>
+      <Text style={[styles.navIcon, activeTab === 'relax' && styles.navActive]}>🧘</Text>
+      <Text style={[styles.navText, activeTab === 'relax' && styles.navActiveText]}>{t('relax')}</Text>
+    </TouchableOpacity>
+    <TouchableOpacity style={styles.navItem} onPress={() => onTabChange('practice')}>
+      <Text style={[styles.navIcon, activeTab === 'practice' && styles.navActive]}>🎤</Text>
+      <Text style={[styles.navText, activeTab === 'practice' && styles.navActiveText]}>{t('practice')}</Text>
+    </TouchableOpacity>
+    <TouchableOpacity style={styles.navItem} onPress={() => onTabChange('settings')}>
+      <Text style={[styles.navIcon, activeTab === 'settings' && styles.navActive]}>⚙️</Text>
+      <Text style={[styles.navText, activeTab === 'settings' && styles.navActiveText]}>{t('settings')}</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+// --- SCREENS ---
+
+// --- SCREENS ---
+
+// --- SCREENS ---
+
+const CheckoutScreen = ({ t, onComplete, onBack }) => {
+  const [loading, setLoading] = useState(false);
+  const { width } = Dimensions.get('window');
+  const isDesktop = width > 800;
+
+  // Form State
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Cleaned up unused card state
+
+  // Placeholder Stripe Link (User should replace this)
+  const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/test_123456789';
+
+  const handlePay = async () => {
+    if (!email || !password) {
+      Alert.alert('Missing Information', 'Please create your account (Email & Password) first.');
+      return;
+    }
+
+    // VIP / Investor Bypass
+    const isVip =
+      email.toLowerCase().includes('admin') ||
+      email.toLowerCase().includes('investor') ||
+      (email.toLowerCase() === 'petr@speekly.com' && password === 'PetrAdmin1011');
+
+    if (isVip) {
+      setLoading(true);
+      setTimeout(() => {
+        Alert.alert("VIP Access Granted", "Welcome aboard! No payment required.");
+        setLoading(false);
+        onComplete();
+      }, 1000);
+      return;
+    }
+
+    setLoading(true);
+
+    // 1. Open Stripe
+    // In a real app, you would pass the email as a query param like ?prefilled_email=${email}
+    const supported = await Linking.canOpenURL(STRIPE_PAYMENT_LINK);
+    if (supported) {
+      await Linking.openURL(STRIPE_PAYMENT_LINK);
+    } else {
+      Alert.alert("Error", "Cannot open payment link.");
+      setLoading(false);
+      return;
+    }
+
+    // 2. Wait for user to come back manually (MVP)
+    // In production, you would use Deep Linking (e.g. speekly://success) or wait for a Supabase webhook.
+    Alert.alert(
+      "Payment Window Opened",
+      "Please complete the payment in the browser window.\n\nDid you finish the payment?",
+      [
+        { text: "No, Cancel", onPress: () => setLoading(false), style: "cancel" },
+        {
+          text: "Yes, I Paid",
+          onPress: () => {
+            setLoading(false);
+            onComplete();
+          }
+        }
+      ]
+    );
+  };
+
+  return (
+    <ScrollView style={styles.screenScroll}>
+      <View style={{ maxWidth: 1000, alignSelf: 'center', width: '100%', paddingBottom: 50 }}>
+
+        {/* Navigation */}
+        <TouchableOpacity onPress={onBack} style={{ marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 18, marginRight: 5 }}>←</Text>
+          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 16 }}>{t('back_home')}</Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.headerTitle, { marginBottom: 10 }]}>{t('checkout_title')}</Text>
+
+        <View style={isDesktop ? { flexDirection: 'row', gap: 40, alignItems: 'flex-start' } : {}}>
+
+          {/* Left Column: Order Summary (Desktop) */}
+          <View style={isDesktop ? { flex: 1 } : { marginBottom: 30 }}>
+            <View style={{ backgroundColor: '#11221E', padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#2D4F44' }}>
+              <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12, textTransform: 'uppercase', fontWeight: 'bold', marginBottom: 15 }}>{t('order_sum')}</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 18, fontWeight: 'bold' }}>{t('plan_name')}</Text>
+                <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 18 }}>$100.00</Text>
+              </View>
+              <Text style={{ color: COLORS.TEXT_SEC, marginBottom: 20 }}>{t('one_time')}</Text>
+
+              <View style={{ height: 1, backgroundColor: '#2D4F44', marginBottom: 20 }} />
+
+              <Text style={{ color: COLORS.ACCENT_LIME, marginBottom: 5 }}>✅ Unlimited AI Access</Text>
+              <Text style={{ color: COLORS.ACCENT_LIME, marginBottom: 5 }}>✅ Speech Pattern Analysis</Text>
+              <Text style={{ color: COLORS.ACCENT_LIME, marginBottom: 5 }}>✅ Future V2 Updates Included</Text>
+            </View>
+
+            {isDesktop && (
+              <View style={{ marginTop: 20, flexDirection: 'row', gap: 10, opacity: 0.6 }}>
+                <Text style={{ fontSize: 24 }}>🔒</Text>
+                <Text style={{ color: COLORS.TEXT_SEC, flex: 1, fontSize: 12 }}>Payments are securely processed by Stripe. We do not store your credit card details.</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Right Column: Payment Form */}
+          <View style={isDesktop ? { flex: 1 } : {}}>
+            <View style={styles.checkoutCard}>
+              <Text style={styles.inputLabel}>{t('create_acc')}</Text>
+              <TextInput style={styles.input} placeholder="Email address" placeholderTextColor="#556" autoCapitalize="none" value={email} onChangeText={setEmail} />
+              <TextInput style={styles.input} placeholder="Choose Password" secureTextEntry placeholderTextColor="#556" value={password} onChangeText={setPassword} />
+
+              <Text style={styles.inputLabel}>{t('pay_method')}</Text>
+
+              <TouchableOpacity
+                style={{ backgroundColor: '#635BFF', paddingVertical: 18, borderRadius: 12, alignItems: 'center', marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 10 }}
+                onPress={handlePay}
+              >
+                {loading ? (
+                  <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>Redirecting...</Text>
+                ) : (
+                  <>
+                    <Text style={{ fontSize: 20 }}>💳</Text>
+                    <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>{t('pay_btn')}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
+                <Text style={{ fontSize: 12, color: COLORS.TEXT_SEC }}>🔒 {t('redirect_note')}</Text>
+              </View>
+            </View>
+          </View>
+
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
+
+
+const HomeScreen = ({ t, onStartRelax, onStartSos, streak = 0 }) => {
+  const [showInstall, setShowInstall] = useState(Platform.OS === 'web');
+
+  return (
+    <ScrollView style={styles.screenScroll}>
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>{t('hello')} User! 👋</Text>
+        <Text style={styles.headerSubtitle}>{t('how_feel')}</Text>
+        {/* Streak Badge Header */}
+        {streak > 0 && (
+          <View style={{ position: 'absolute', right: 0, top: 0, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 }}>
+            <Text style={{ fontSize: 16 }}>🔥 {streak}</Text>
+          </View>
+        )}
+      </View>
+
+      {/* SOS Button */}
+      <TouchableOpacity
+        style={{ backgroundColor: 'rgba(249,115,22,0.15)', borderColor: COLORS.ACCENT_ORANGE, borderWidth: 1, padding: 20, borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}
+        onPress={onStartSos}
+      >
+        <Text style={{ fontSize: 32, marginRight: 15 }}>🚨</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: COLORS.ACCENT_ORANGE, fontSize: 18, fontWeight: 'bold' }}>SOS Panic Button</Text>
+          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 13 }}>Presentation in 5 mins? click here.</Text>
+        </View>
+        <Text style={{ color: COLORS.ACCENT_ORANGE, fontSize: 24 }}>→</Text>
+      </TouchableOpacity>
+
+      {showInstall && (
+        <View style={styles.installBanner}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.installTitle}>Install Speekly App</Text>
+            <Text style={styles.installDesc}>Add to Home Screen for the best experience.</Text>
+          </View>
+          <TouchableOpacity style={styles.smallButton} onPress={() => Alert.alert("Install Guide", "iOS: Tap Share -> Add to Home Screen\nAndroid: Tap Menu -> Install App")}>
+            <Text style={styles.smallButtonText}>Install +</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <Text style={styles.sectionLabel}>{t('recommendation')}</Text>
+      <View style={styles.recCard}>
+        <Text style={styles.recText}>{t('start_breath')}</Text>
+        <TouchableOpacity style={styles.limeButton} onPress={onStartRelax}>
+          <Text style={styles.limeButtonText}>{t('start_ex')}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{streak} 🔥</Text>
+          <Text style={styles.statLabel}>{t('days_row')}</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>-</Text>
+          <Text style={styles.statLabel}>{t('ex_week')}</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
+
+const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete }) => {
+  const [mode, setMode] = useState('read'); // 'read' or 'chat'
+  const [selectedScenario, setSelectedScenario] = useState(CONVERSATION_SCENARIOS[0]);
+
+  // Read Mode State
+  const [textIndex, setTextIndex] = useState(0);
+
+  // Chat Mode State
+  const [chatHistory, setChatHistory] = useState([]); // [{role, content}]
+  const [customPromptInput, setCustomPromptInput] = useState(''); // For user-defined scenarios
+
+  // Common State
+  const [recording, setRecording] = useState(false);
+  const [transcript, setTranscript] = useState(''); // Current incomplete utterance
+  const [aiFeedback, setAiFeedback] = useState(''); // For read mode
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [wpm, setWpm] = useState(0); // Words Per Minute
+
+  // Refs
+  const recognitionRef = useRef(null);
+  const startTimeRef = useRef(null);
+
+  const startRecording = async () => {
+    setTranscript('');
+    setAiFeedback('');
+    setWpm(0);
+    setRecording(true);
+    startTimeRef.current = Date.now();
+
+    if (Platform.OS === 'web') {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = language === 'cz' ? 'cs-CZ' : 'en-US';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onresult = (event) => {
+          let final = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) final += event.results[i][0].transcript;
+          }
+          if (final) setTranscript(prev => prev + ' ' + final);
+        };
+
+        recognition.start();
+        recognitionRef.current = recognition;
+      }
+    }
+  };
+
+  const stopRecording = () => {
+    setRecording(false);
+    if (recognitionRef.current) recognitionRef.current.stop();
+
+    // Calculate WPM
+    const durationSec = (Date.now() - startTimeRef.current) / 1000;
+    const wordCount = transcript.trim().split(/\s+/).length;
+    if (durationSec > 0 && wordCount > 0) {
+      setWpm(Math.round((wordCount / durationSec) * 60));
+    }
+
+    // Small delay to ensure final transcript is captured
+    setTimeout(() => {
+      if (transcript.length > 2) handleFinalInput(transcript);
+    }, 500);
+  };
+
+  const handleFinalInput = (text) => {
+    if (mode === 'read') {
+      analyzeRead(text);
+    } else {
+      analyzeChat(text);
+    }
+  };
+
+  const analyzeRead = async (text) => {
+    const effectiveKey = apiKey || SYSTEM_API_KEY;
+    if (!effectiveKey) return;
+    setIsProcessing(true);
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${effectiveKey}` },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: "You are a supportive speech therapist. Evaluate 'Acoustic Stability' (steady volume, lack of fillers like 'um', 'err') and clarity. Check for Bradylalia (too slow) or Tachylalia (too fast). Be supportive." },
+            { role: "user", content: text }
+          ]
+        })
+      });
+      const data = await response.json();
+      if (data.choices) {
+        setAiFeedback(data.choices[0].message.content);
+        if (onComplete) onComplete();
+        // Fire icon animation could go here, but Alert in App.js handles it for now
+      }
+    } catch (e) { console.error(e); }
+    setIsProcessing(false);
+  };
+
+  const analyzeChat = async (userText) => {
+    const effectiveKey = apiKey || SYSTEM_API_KEY;
+    if (!effectiveKey) return;
+
+    const newUserMsg = { role: 'user', content: userText };
+    const updatedHistory = [...chatHistory, newUserMsg];
+    setChatHistory(updatedHistory);
+    setTranscript(''); // clear current input
+
+    setIsProcessing(true);
+    try {
+      let systemContent = selectedScenario.prompt;
+
+      // Dynamic Prompt for Custom Scenario
+      if (selectedScenario.id === 'custom' && customPromptInput) {
+        systemContent = `You are roleplaying a specific scenario defined by the user: "${customPromptInput}". Act the part convincingly. Keep responses concise.`;
+      } else {
+        systemContent += " Keep your responses concise (1-2 sentences).";
+      }
+
+      const sysMsg = { role: "system", content: systemContent };
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${effectiveKey}` },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [sysMsg, ...updatedHistory]
+        })
+      });
+      const data = await response.json();
+      if (data.choices) {
+        const aiMsg = data.choices[0].message;
+        setChatHistory(prev => [...prev, aiMsg]);
+        if (onComplete) onComplete();
+      }
+    } catch (e) { console.error(e); }
+    setIsProcessing(false);
+  };
+
+  // Switch Mode & Clear
+  const switchMode = (m) => {
+    setMode(m);
+    setChatHistory([]);
+    setAiFeedback('');
+    setTranscript('');
+  };
+
+  return (
+    <ScrollView style={styles.screenScroll}>
+      <View style={styles.navHeader}>
+        <TouchableOpacity><Text style={styles.backArrow}>◀</Text></TouchableOpacity>
+        <Text style={styles.navTitle}>{t('practice_title')}</Text>
+        <View style={{ width: 20 }} />
+      </View>
+
+      {/* Mode Toggle */}
+      <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', padding: 4, borderRadius: 12, marginBottom: 20, marginHorizontal: 20 }}>
+        <TouchableOpacity
+          style={{ flex: 1, padding: 10, alignItems: 'center', borderRadius: 8, backgroundColor: mode === 'read' ? COLORS.ACCENT_LIME : 'transparent' }}
+          onPress={() => switchMode('read')}
+        >
+          <Text style={{ fontWeight: 'bold', color: mode === 'read' ? COLORS.BG_DARK : COLORS.TEXT_SEC }}>{t('read_mode')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ flex: 1, padding: 10, alignItems: 'center', borderRadius: 8, backgroundColor: mode === 'chat' ? COLORS.ACCENT_LIME : 'transparent' }}
+          onPress={() => switchMode('chat')}
+        >
+          <Text style={{ fontWeight: 'bold', color: mode === 'chat' ? COLORS.BG_DARK : COLORS.TEXT_SEC }}>{t('chat_mode')}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {mode === 'read' ? (
+        <>
+          <Text style={styles.sectionLabel}>Practice Text</Text>
+          <View style={styles.practiceCard}>
+            <Text style={styles.practiceTextContent}>{PRACTICE_SENTENCES[textIndex]}</Text>
+            <TouchableOpacity
+              style={styles.smallButton}
+              onPress={() => setTextIndex((textIndex + 1) % PRACTICE_SENTENCES.length)}
+            >
+              <Text style={styles.smallButtonText}>{t('diff_text')}</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      ) : (
+        <>
+          {/* Scenario Selector */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20, paddingLeft: 20 }}>
+            {CONVERSATION_SCENARIOS.map(sc => (
+              <TouchableOpacity
+                key={sc.id}
+                style={{ marginRight: 10, backgroundColor: selectedScenario.id === sc.id ? COLORS.ACCENT_LIME : 'rgba(255,255,255,0.1)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 }}
+                onPress={() => { setSelectedScenario(sc); setChatHistory([]); }}
+              >
+                <Text style={{ color: selectedScenario.id === sc.id ? COLORS.BG_DARK : COLORS.TEXT_WHITE, fontWeight: 'bold' }}>
+                  {sc.icon} {sc.id === 'job' ? t('scen_job') : sc.id === 'coffee' ? t('scen_coffee') : sc.id === 'social' ? t('scen_social') : t('scen_custom')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Custom Scenario Input Area */}
+          {selectedScenario.id === 'custom' && chatHistory.length === 0 && (
+            <View style={{ marginHorizontal: 20, marginBottom: 20, backgroundColor: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 12 }}>
+              <Text style={{ color: COLORS.TEXT_WHITE, marginBottom: 10, fontWeight: 'bold' }}>{t('custom_desc')}</Text>
+              <TextInput
+                style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: '#FFF', padding: 12, borderRadius: 8, marginBottom: 10 }}
+                placeholder={t('custom_placeholder')}
+                placeholderTextColor="#666"
+                value={customPromptInput}
+                onChangeText={setCustomPromptInput}
+              />
+              <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}></Text>
+            </View>
+          )}
+
+          {/* Chat Area */}
+          <View style={{ minHeight: 300, paddingHorizontal: 20 }}>
+            {chatHistory.length === 0 && (
+              <Text style={{ color: COLORS.TEXT_SEC, textAlign: 'center', marginTop: 50, fontStyle: 'italic' }}>
+                {selectedScenario.id === 'custom'
+                  ? t('custom_desc')
+                  : t('start_breath')}
+              </Text>
+            )}
+            {chatHistory.map((msg, i) => (
+              <View key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', backgroundColor: msg.role === 'user' ? COLORS.ACCENT_ORANGE : 'rgba(255,255,255,0.1)', maxWidth: '80%', padding: 12, borderRadius: 12, marginBottom: 10 }}>
+                <Text style={{ color: '#FFF' }}>{msg.content}</Text>
+              </View>
+            ))}
+            {isProcessing && <Text style={{ marginLeft: 20, color: COLORS.TEXT_SEC, fontStyle: 'italic' }}>AI is typing...</Text>}
+          </View>
+        </>
+      )}
+
+      <View style={styles.micContainer}>
+        <TouchableOpacity
+          style={[styles.micButton, recording && styles.micActive]}
+          onPress={recording ? stopRecording : startRecording}
+        >
+          <Text style={styles.micIcon}>{recording ? '⬛' : '🎤'}</Text>
+        </TouchableOpacity>
+        <Text style={styles.micLabel}>{recording ? 'Listening...' : t('press_record')}</Text>
+      </View>
+
+      {/* Legacy Feedback Area (only for Read mode) */}
+      {mode === 'read' && (transcript || aiFeedback) && (
+        <View style={styles.feedbackArea}>
+          <Text style={styles.userText}>"{transcript}"</Text>
+          {wpm > 0 && <Text style={{ color: COLORS.ACCENT_LIME, fontSize: 12, marginTop: 5, fontStyle: 'italic' }}>Speed: ~{wpm} WPM</Text>}
+          {isProcessing && <Text style={{ color: COLORS.ACCENT_LIME }}>Analyzing...</Text>}
+          {aiFeedback ? <View style={styles.aiBox}><Text style={styles.aiText}>💡 {aiFeedback}</Text></View> : null}
+        </View>
+      )}
+
+      {/* No Recordings Placeholder if empty */}
+      {!transcript && !recording && (
+        <View style={styles.emptyState}>
+          <Text style={{ fontSize: 24 }}>🎙️</Text>
+          <Text style={styles.emptyText}>{t('no_rec')}</Text>
+        </View>
+      )}
+
+      <View style={styles.tipsBox}>
+        <Text style={styles.tipsTitle}>💡 {t('tips')}</Text>
+        {TIPS_DATA.map((tip, i) => (
+          <Text key={i} style={styles.tipItem}>• {tip}</Text>
+        ))}
+      </View>
+
+      {!apiKey && !SYSTEM_API_KEY && <Text style={{ color: COLORS.ACCENT_ORANGE, textAlign: 'center', marginTop: 10 }}>⚠️ {t('login_api')}</Text>}
+
+    </ScrollView>
+  );
+};
+
+const RelaxationScreen = ({ t, onComplete }) => {
+  const [timeLeft, setTimeLeft] = useState(RELAX_TECHNIQUES[0].time * 60);
+  const [isActive, setIsActive] = useState(false);
+  const [selectedId, setSelectedId] = useState(1);
+
+  // Custom Techniques State
+  const [customList, setCustomList] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newTime, setNewTime] = useState('');
+
+  // Combined List
+  const allTechniques = [...RELAX_TECHNIQUES, ...customList];
+
+  useEffect(() => {
+    let interval = null;
+    if (isActive && timeLeft > 0) {
+      interval = setInterval(() => setTimeLeft(timeLeft - 1), 1000);
+    } else if (timeLeft === 0) {
+      if (isActive) {
+        setIsActive(false);
+        if (onComplete) onComplete();
+      }
+    }
+    return () => clearInterval(interval);
+  }, [isActive, timeLeft]);
+
+  const fmt = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec < 10 ? '0' : ''}${sec}`;
+  };
+
+  const selectTech = (tech) => {
+    setSelectedId(tech.id);
+    setTimeLeft(tech.time * 60);
+    setIsActive(false);
+  };
+
+  const addCustomTechnique = () => {
+    if (!newTitle || !newTime) return;
+    const newTech = {
+      id: Date.now(), // simple unique id
+      title: newTitle,
+      time: parseInt(newTime),
+      timeStr: `${newTime} minutes`,
+      type: 'custom'
+    };
+    setCustomList([...customList, newTech]);
+    setShowAddModal(false);
+    setNewTitle('');
+    setNewTime('');
+  };
+
+  return (
+    <ScrollView style={styles.screenScroll}>
+      <View style={styles.navHeader}>
+        <TouchableOpacity><Text style={styles.backArrow}>◀</Text></TouchableOpacity>
+        <Text style={styles.navTitle}>{t('relax_title')}</Text>
+        <View style={{ width: 20 }} />
+      </View>
+      <Text style={styles.subHeaderCentered}>{t('relax_sub')}</Text>
+
+      <View style={{ gap: 10, marginVertical: 20 }}>
+        {allTechniques.map(tech => (
+          <TouchableOpacity
+            key={tech.id}
+            style={[styles.techCard, selectedId === tech.id && styles.techCardActive]}
+            onPress={() => selectTech(tech)}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontSize: 20, marginRight: 10 }}>
+                {
+                  tech.type === 'deep' ? '🧘' :
+                    tech.type === 'body' ? '💪' :
+                      tech.type === 'physical' ? '💆' :
+                        tech.type === 'mental' ? '🧠' : '⏰'
+                }
+              </Text>
+              <View>
+                <Text style={styles.techTitle}>
+                  {tech.id === 1 ? t('rel_diaphragm') :
+                    tech.id === 2 ? t('rel_pmr') :
+                      tech.id === 3 ? t('rel_jaw') :
+                        tech.id === 4 ? t('rel_viz') :
+                          tech.id === 5 ? t('rel_vocal') : tech.title}
+                </Text>
+                <Text style={styles.techTime}>{tech.timeStr}</Text>
+              </View>
+            </View>
+            {selectedId === tech.id && <View style={styles.radioDot} />}
+          </TouchableOpacity>
+        ))}
+
+        {/* Add New Button */}
+        <TouchableOpacity style={[styles.techCard, { borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' }]} onPress={() => setShowAddModal(true)}>
+          <Text style={{ color: COLORS.ACCENT_LIME, fontWeight: 'bold' }}>+ {t('add_custom')}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.timerContainer}>
+        <Text style={styles.timerText}>{fmt(timeLeft)}</Text>
+        <View style={styles.timerControls}>
+          <TouchableOpacity
+            style={styles.playButton}
+            onPress={() => setIsActive(!isActive)}
+          >
+            <Text style={styles.playIcon}>{isActive ? '⏸' : '▶'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.resetButton}
+            onPress={() => { setIsActive(false); const tech = allTechniques.find(x => x.id === selectedId); setTimeLeft(tech ? tech.time * 60 : 180); }}
+          >
+            <Text style={styles.resetIcon}>↺</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.tipsBox}>
+        <Text style={styles.tipsTitle}>📄 {t('instructions')}</Text>
+        {/* TMJ Warning */}
+        {allTechniques.find(t => t.id === selectedId)?.warning && (
+          <View style={{ backgroundColor: 'rgba(249, 115, 22, 0.2)', padding: 10, borderRadius: 8, marginBottom: 10 }}>
+            <Text style={{ color: COLORS.ACCENT_ORANGE, fontWeight: 'bold', fontSize: 13 }}>{t('tmj_warning')}</Text>
+          </View>
+        )}
+
+        {allTechniques.find(t => t.id === selectedId)?.instructions ? (
+          allTechniques.find(t => t.id === selectedId).instructions.map((step, i) => (
+            <Text key={i} style={styles.tipItem}>• {step}</Text>
+          ))
+        ) : (
+          <>
+            <Text style={styles.tipItem}>• Sit comfortably and close your eyes</Text>
+            <Text style={styles.tipItem}>• Focus on your breath</Text>
+            <Text style={styles.tipItem}>• Breathe in for 4 counts, hold for 4 counts</Text>
+            <Text style={styles.tipItem}>• Repeat and relax</Text>
+          </>
+        )}
+      </View>
+
+      {/* Add Modal */}
+      <Modal visible={showAddModal} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: COLORS.BG_DARK, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: COLORS.ACCENT_LIME }}>
+            <Text style={{ color: '#FFF', fontSize: 20, fontWeight: 'bold', marginBottom: 20 }}>Add Custom Technique</Text>
+
+            <Text style={styles.inputLabel}>Title</Text>
+            <TextInput style={styles.input} placeholder="e.g. Morning Calm" placeholderTextColor="#556" value={newTitle} onChangeText={setNewTitle} />
+
+            <Text style={styles.inputLabel}>Duration (minutes)</Text>
+            <TextInput style={styles.input} placeholder="e.g. 5" keyboardType="numeric" placeholderTextColor="#556" value={newTime} onChangeText={setNewTime} />
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+              <TouchableOpacity style={{ flex: 1, padding: 15, alignItems: 'center' }} onPress={() => setShowAddModal(false)}>
+                <Text style={{ color: COLORS.TEXT_SEC }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.limeButton, { marginTop: 0, flex: 1 }]} onPress={addCustomTechnique}>
+                <Text style={styles.limeButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+    </ScrollView>
+  );
+};
+
+const SosScreen = ({ t, onExit }) => {
+  const [phase, setPhase] = useState('Inhale'); // Inhale, Hold, Exhale
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [msgIndex, setMsgIndex] = useState(0);
+  const [isDiscrete, setIsDiscrete] = useState(false); // New Discrete Mode
+
+  const AFFIRMATIONS = [
+    "You are safe.",
+    "Take your time.",
+    "Your voice matters.",
+    "You are prepared.",
+    "Just breathe.",
+    "Speak slowly.",
+    "It is okay to pause."
+  ];
+
+  useEffect(() => {
+    // Timer
+    const timer = setInterval(() => {
+      setTimeLeft(t => {
+        if (t <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+
+    // Breathing Phase Loop (12s cycle: 4 In, 4 Hold, 4 Out)
+    let step = 0;
+    const breather = setInterval(() => {
+      step = (step + 1) % 3;
+      if (step === 0) {
+        setPhase("Inhale");
+        if (Platform.OS !== 'web') Vibration.vibrate(100); // Haptic start
+      }
+      if (step === 1) setPhase("Hold");
+      if (step === 2) setPhase("Exhale");
+    }, 4000);
+
+    // Affirmation Loop
+    const affirmer = setInterval(() => {
+      setMsgIndex(i => (i + 1) % AFFIRMATIONS.length);
+    }, 5000);
+
+    return () => { clearInterval(timer); clearInterval(breather); clearInterval(affirmer); };
+  }, []);
+
+  return (
+    <View style={[styles.screenScroll, { alignItems: 'center', justifyContent: 'center', height: '90%', backgroundColor: isDiscrete ? '#000' : 'transparent' }]}>
+      <TouchableOpacity
+        style={{ position: 'absolute', top: 0, right: 0, padding: 10 }}
+        onPress={() => setIsDiscrete(!isDiscrete)}
+      >
+        <Text style={{ fontSize: 24 }}>{isDiscrete ? '👁️‍🗨️' : '👁️'}</Text>
+      </TouchableOpacity>
+
+      <Text style={{ color: isDiscrete ? '#333' : COLORS.ACCENT_ORANGE, fontSize: 16, fontWeight: 'bold', marginBottom: 20 }}>
+        {isDiscrete ? 'DISCRETE MODE' : 'EMERGENCY CALM'}
+      </Text>
+
+      {/* Breathing Circle */}
+      <View style={{ width: 200, height: 200, borderRadius: 100, borderWidth: isDiscrete ? 0 : 4, borderColor: COLORS.ACCENT_ORANGE, alignItems: 'center', justifyContent: 'center', marginBottom: 40, backgroundColor: (!isDiscrete && phase === 'Hold') ? 'rgba(249,115,22,0.1)' : 'transparent' }}>
+
+        {/* In discrete mode, show minimal text, hide big visual cues */}
+        {!isDiscrete ? (
+          <>
+            <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 32, fontWeight: 'bold' }}>{phase}</Text>
+            <Text style={{ color: COLORS.TEXT_SEC, fontSize: 14, marginTop: 5 }}>4 sec</Text>
+          </>
+        ) : (
+          <Text style={{ color: '#444', fontSize: 14 }}>{phase}...</Text>
+        )}
+
+      </View>
+
+      <Text style={{ color: isDiscrete ? '#444' : COLORS.TEXT_WHITE, fontSize: isDiscrete ? 16 : 24, textAlign: 'center', height: 60, marginBottom: 20 }}>
+        "{AFFIRMATIONS[msgIndex]}"
+      </Text>
+
+      <TouchableOpacity style={[styles.limeButton, { backgroundColor: isDiscrete ? '#222' : COLORS.ACCENT_ORANGE, width: 200 }]} onPress={onExit}>
+        <Text style={{ color: isDiscrete ? '#666' : '#FFF', fontWeight: 'bold', fontSize: 18 }}>{timeLeft > 0 ? `I'm Ready (${timeLeft}s)` : "I'm Ready"}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset }) => (
+  <ScrollView style={styles.screenScroll}>
+    <Text style={styles.headerTitle}>{t('settings')}</Text>
+
+    <Text style={styles.sectionLabel}>Language / Jazyk</Text>
+    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+      <TouchableOpacity style={[styles.langBtn, language === 'en' && styles.langBtnActive]} onPress={() => setLanguage('en')}>
+        <Text style={styles.langText}>English 🇺🇸</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.langBtn, language === 'cz' && styles.langBtnActive]} onPress={() => setLanguage('cz')}>
+        <Text style={styles.langText}>Čeština 🇨🇿</Text>
+      </TouchableOpacity>
+    </View>
+
+
+
+    <Text style={[styles.sectionLabel, { marginTop: 40, color: COLORS.ACCENT_ORANGE }]}>Danger Zone</Text>
+    <TouchableOpacity style={[styles.limeButton, { backgroundColor: 'rgba(249,115,22,0.2)' }]} onPress={onReset}>
+      <Text style={{ color: COLORS.ACCENT_ORANGE, fontWeight: 'bold' }}>🔄 Reset / Re-test Flow</Text>
+    </TouchableOpacity>
+    <Text style={{ color: COLORS.TEXT_SEC, textAlign: 'center', marginTop: 10, fontSize: 12 }}>Clears payment & restarts app</Text>
+
+    <View style={{ marginTop: 40, marginBottom: 40, padding: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' }}>
+      <Text style={{ color: COLORS.TEXT_SEC, fontSize: 11, textAlign: 'center', fontStyle: 'italic' }}>
+        {t('disclaimer')}
+      </Text>
+    </View>
+  </ScrollView>
+);
+
+
+
+// --- MAIN APP ---
+
+const SCENARIOS = {
+  // ... (previous content)
+};
+
+// ⚠️ REPLACE THIS WITH YOUR REAL OPENAI KEY FOR PRODUCTION
+// For client-side demos only. In production, use a backend proxy.
+const SYSTEM_API_KEY = "";
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState('home');
+  const [currentScreen, setCurrentScreen] = useState('landing'); // landing | checkout | app
+  const [language, setLanguage] = useState('en');
+  const [apiKey, setApiKey] = useState('');
+  const [isReady, setIsReady] = useState(false);
+  const [streak, setStreak] = useState(0); // Gamification
+
+  useEffect(() => {
+    // Load Persisted Data
+    const load = async () => {
+      const l = await AsyncStorage.getItem('language');
+      const k = await AsyncStorage.getItem('openai_key');
+      const isPremium = await AsyncStorage.getItem('is_premium');
+
+      // Load Streak
+      const s = await AsyncStorage.getItem('user_streak');
+      const lastDate = await AsyncStorage.getItem('last_practice_date');
+
+      // Basic Streak Validation logic (visual only for now, logic on update)
+      if (s) setStreak(parseInt(s));
+
+      if (l) setLanguage(l);
+      if (k) setApiKey(k);
+
+      // Auto-Login if Premium
+      if (isPremium === 'true') {
+        setCurrentScreen('app');
+      }
+
+      setIsReady(true);
+    };
+    load();
+  }, []);
+
+  const goToCheckout = () => {
+    setCurrentScreen('checkout');
+  };
+
+  const finishCheckout = async () => {
+    await AsyncStorage.setItem('is_premium', 'true');
+    await AsyncStorage.setItem('has_seen_landing', 'true');
+    setCurrentScreen('app');
+  };
+
+  const saveLang = async (l) => { setLanguage(l); await AsyncStorage.setItem('language', l); };
+  const saveKey = async (k) => { setApiKey(k); await AsyncStorage.setItem('openai_key', k); };
+
+  const markPracticeComplete = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const lastDate = await AsyncStorage.getItem('last_practice_date');
+
+    if (lastDate === today) return; // Already practiced today
+
+    let newStreak = streak;
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+    if (lastDate === yesterday) {
+      newStreak += 1;
+    } else {
+      newStreak = 1; // Broken streak or first time
+    }
+
+    setStreak(newStreak);
+    await AsyncStorage.setItem('user_streak', newStreak.toString());
+    await AsyncStorage.setItem('last_practice_date', today);
+
+    Alert.alert("🔥 Streak Updated!", `You're on a ${newStreak} day streak! Keep it up!`);
+  };
+
+  const t = (k) => DICTIONARY[language][k] || k;
+
+  if (!isReady) return null;
+
+  if (currentScreen === 'landing') {
+    return (
+      <MobileContainer fullWidth={true}>
+        <StatusBar style="light" />
+        <SafeAreaView style={styles.safeArea}>
+          <LandingScreen t={t} onGetStarted={goToCheckout} />
+        </SafeAreaView>
+      </MobileContainer>
+    );
+  }
+
+  if (currentScreen === 'checkout') {
+    return (
+      <MobileContainer fullWidth={true}>
+        <StatusBar style="light" />
+        <SafeAreaView style={styles.safeArea}>
+          <CheckoutScreen t={t} onComplete={finishCheckout} onBack={() => setCurrentScreen('landing')} />
+        </SafeAreaView>
+      </MobileContainer>
+    );
+  }
+
+  const handleReset = async () => {
+    await AsyncStorage.removeItem('is_premium');
+    setCurrentScreen('landing');
+  };
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <MobileContainer fullWidth={true}>
+      <StatusBar style="light" />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.contentContainer}>
+          <View style={{ maxWidth: 1000, alignSelf: 'center', width: '100%', flex: 1 }}>
+            {activeTab === 'home' && <HomeScreen t={t} streak={streak} onStartRelax={() => setActiveTab('relax')} onStartSos={() => setActiveTab('sos')} />}
+            {activeTab === 'relax' && <RelaxationScreen t={t} onComplete={markPracticeComplete} />}
+            {activeTab === 'practice' && <PracticeScreen t={t} language={language} apiKey={apiKey} onComplete={markPracticeComplete} />}
+            {activeTab === 'settings' && <SettingsScreen t={t} language={language} setLanguage={saveLang} apiKey={apiKey} setApiKey={saveKey} onReset={handleReset} />}
+            {activeTab === 'sos' && <SosScreen t={t} onExit={() => setActiveTab('home')} />}
+          </View>
+        </View>
+        <Navbar activeTab={activeTab} onTabChange={setActiveTab} t={t} />
+      </SafeAreaView>
+    </MobileContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+  // Layouts
+  webContainer: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
+  mobileWrapper: { width: '100%', maxWidth: 500, height: '100%', backgroundColor: COLORS.BG_DARK, overflow: 'hidden' },
+  webWrapperFull: { maxWidth: '100%' },
+  safeArea: { flex: 1, backgroundColor: COLORS.BG_DARK },
+  contentContainer: { flex: 1 },
+  screenScroll: { flex: 1, padding: 20 },
+
+  // Landing Screen
+  heroSection: { alignItems: 'center', padding: 30, paddingTop: 60, marginBottom: 20 },
+  heroBadge: { backgroundColor: '#1A382F', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginBottom: 20, borderWidth: 1, borderColor: '#2D4F44' },
+  heroBadgeText: { color: COLORS.ACCENT_LIME, fontWeight: '600', fontSize: 12 },
+  heroTitle: { fontSize: 42, color: COLORS.TEXT_WHITE, fontWeight: 'bold', textAlign: 'center', lineHeight: 50, marginBottom: 20 },
+  heroSub: { fontSize: 18, color: COLORS.TEXT_SEC, textAlign: 'center', lineHeight: 28, marginBottom: 40 },
+  heroButton: { backgroundColor: COLORS.ACCENT_LIME, paddingVertical: 18, paddingHorizontal: 40, borderRadius: 100, marginBottom: 20, width: '100%', alignItems: 'center', shadowColor: COLORS.ACCENT_LIME, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  heroButtonText: { color: '#0F2822', fontWeight: 'bold', fontSize: 18 },
+  heroNote: { color: COLORS.TEXT_SEC, fontSize: 12 },
+
+  sectionContainer: { padding: 24, marginBottom: 10 },
+  sectionHeader: { fontSize: 28, fontWeight: 'bold', color: COLORS.TEXT_WHITE, marginBottom: 30, textAlign: 'center' },
+
+  benefitCard: { backgroundColor: '#1A382F', padding: 24, borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  benefitIcon: { fontSize: 32, marginBottom: 16 },
+  benefitTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.TEXT_WHITE, marginBottom: 8 },
+  benefitDesc: { fontSize: 15, color: COLORS.TEXT_SEC, lineHeight: 22 },
+
+  processSection: { padding: 24, backgroundColor: '#11221E', marginVertical: 20 },
+  stepRow: { flexDirection: 'row', marginBottom: 30 },
+  stepNumber: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#2D4F44', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  stepNumText: { color: COLORS.ACCENT_LIME, fontWeight: 'bold', fontSize: 18 },
+  stepTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.TEXT_WHITE, marginBottom: 4 },
+  stepDesc: { fontSize: 14, color: COLORS.TEXT_SEC },
+
+  testimonialCard: { backgroundColor: '#142E27', padding: 30, borderRadius: 20, borderTopWidth: 4, borderTopColor: COLORS.ACCENT_LIME },
+  quote: { fontSize: 18, color: COLORS.TEXT_WHITE, fontStyle: 'italic', marginBottom: 20, lineHeight: 28 },
+  author: { color: COLORS.ACCENT_LIME, fontWeight: 'bold', fontSize: 14, marginBottom: 4 },
+  stars: { fontSize: 12 },
+
+  // Offer Section
+  offerContainer: { margin: 24, padding: 30, backgroundColor: 'linear-gradient(180deg, #1A382F 0%, #0F2822 100%)', borderRadius: 24, alignItems: 'center', borderWidth: 1, borderColor: COLORS.ACCENT_LIME, shadowColor: COLORS.ACCENT_LIME, shadowOpacity: 0.1, shadowRadius: 20 },
+  offerBadge: { backgroundColor: COLORS.ACCENT_LIME, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8, marginBottom: 20 },
+  offerBadgeText: { color: '#0F2822', fontWeight: 'bold', fontSize: 12 },
+  offerTitle: { fontSize: 32, fontWeight: 'bold', color: COLORS.TEXT_WHITE, marginBottom: 10 },
+  offerPrice: { fontSize: 48, fontWeight: 'bold', color: COLORS.TEXT_WHITE, marginBottom: 30 },
+  offerOriginal: { fontSize: 16, color: COLORS.TEXT_SEC, fontWeight: 'normal' },
+
+  checkList: { alignSelf: 'flex-start', marginBottom: 30 },
+  checkItem: { color: COLORS.TEXT_WHITE, fontSize: 16, marginBottom: 12 },
+
+  offerButton: { backgroundColor: COLORS.ACCENT_LIME, paddingVertical: 18, width: '100%', borderRadius: 12, alignItems: 'center', marginBottom: 16 },
+  offerButtonText: { color: '#0F2822', fontWeight: 'bold', fontSize: 18 },
+  guarantee: { color: COLORS.TEXT_SEC, fontSize: 12 },
+
+  // Checkout & Forms
+  checkoutCard: { backgroundColor: '#1A382F', padding: 24, borderRadius: 16 },
+  input: { backgroundColor: '#11221E', color: COLORS.TEXT_WHITE, padding: 16, borderRadius: 12, marginBottom: 16, fontSize: 16, borderWidth: 1, borderColor: '#2D4F44' },
+  inputLabel: { color: COLORS.ACCENT_LIME, fontSize: 12, fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase' },
+  cardRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#11221E', borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: '#2D4F44' },
+
+  // Install Banner
+  installBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2D4F44', padding: 16, margin: 20, borderRadius: 12, marginBottom: 10 },
+  installTitle: { color: COLORS.TEXT_WHITE, fontWeight: 'bold', fontSize: 16 },
+  installDesc: { color: COLORS.TEXT_SEC, fontSize: 12 },
+
+  // Navbar
+  navbar: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.BG_CARD,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
+    maxWidth: 800,
+    width: '100%',
+    alignSelf: 'center',
+    marginBottom: Platform.OS === 'web' ? 20 : 0,
+    borderRadius: Platform.OS === 'web' ? 20 : 0,
   },
+  navItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  navIcon: { fontSize: 24, marginBottom: 4, color: COLORS.TEXT_SEC, opacity: 0.7 },
+  navText: { fontSize: 10, color: COLORS.TEXT_SEC },
+  navActive: { color: COLORS.ACCENT_LIME, opacity: 1 },
+  navActiveText: { color: COLORS.ACCENT_LIME, fontWeight: 'bold' },
+
+  // Header
+  headerContainer: { marginTop: 20, marginBottom: 30 },
+  headerTitle: { fontSize: 28, fontWeight: 'bold', color: COLORS.TEXT_WHITE, marginBottom: 5 },
+  headerSubtitle: { fontSize: 16, color: COLORS.TEXT_SEC },
+  navHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, marginTop: 10 },
+  navTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.TEXT_WHITE },
+  backArrow: { fontSize: 24, color: COLORS.TEXT_SEC, width: 30 },
+  subHeaderCentered: { textAlign: 'center', color: COLORS.TEXT_SEC, marginBottom: 10 },
+
+  // Typography
+  sectionLabel: { fontSize: 18, color: COLORS.TEXT_WHITE, fontWeight: '600', marginBottom: 12, marginTop: 10 },
+
+  // Cards
+  recCard: { backgroundColor: COLORS.BG_CARD, padding: 20, borderRadius: 16, alignItems: 'center', marginBottom: 20 },
+  recText: { color: COLORS.TEXT_WHITE, fontSize: 16, textAlign: 'center', marginBottom: 16, lineHeight: 24 },
+
+  statsRow: { flexDirection: 'row', gap: 12 },
+  statCard: { flex: 1, backgroundColor: COLORS.BG_CARD, padding: 20, borderRadius: 16, alignItems: 'center' },
+  statNumber: { fontSize: 32, fontWeight: 'bold', color: COLORS.ACCENT_LIME, marginBottom: 5 },
+  statLabel: { fontSize: 12, color: COLORS.TEXT_SEC },
+
+  // Buttons
+  limeButton: { backgroundColor: COLORS.ACCENT_LIME, paddingVertical: 12, paddingHorizontal: 32, borderRadius: 30, width: '100%', alignItems: 'center' },
+  limeButtonText: { color: COLORS.TEXT_DARK, fontWeight: 'bold', fontSize: 16 },
+  smallButton: { backgroundColor: 'rgba(0,0,0,0.2)', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, marginTop: 10 },
+  smallButtonText: { color: COLORS.ACCENT_ORANGE, fontSize: 14, fontWeight: '600' },
+
+  // Practice Specifics
+  practiceCard: { backgroundColor: '#142E27', padding: 24, borderRadius: 12, alignItems: 'center', marginBottom: 40, borderLeftWidth: 4, borderLeftColor: COLORS.BG_CARD }, // Slightly distinct background
+  practiceTextContent: { fontSize: 18, color: COLORS.TEXT_WHITE, textAlign: 'center', lineHeight: 28 },
+
+  micContainer: { alignItems: 'center', marginBottom: 30 },
+  micButton: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.ACCENT_LIME, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  micActive: { backgroundColor: COLORS.ACCENT_ORANGE },
+  micIcon: { fontSize: 32 },
+  micLabel: { color: COLORS.TEXT_SEC, fontSize: 14 },
+
+  feedbackArea: { marginBottom: 20 },
+  userText: { color: COLORS.TEXT_WHITE, fontSize: 16, fontStyle: 'italic', marginBottom: 10, textAlign: 'center' },
+  aiBox: { backgroundColor: 'rgba(212, 238, 159, 0.1)', padding: 12, borderRadius: 8 },
+  aiText: { color: '#E2E8F0', fontSize: 15 },
+
+  emptyState: { alignItems: 'center', backgroundColor: COLORS.BG_CARD, padding: 30, borderRadius: 12, marginBottom: 20 },
+  emptyText: { color: COLORS.TEXT_SEC, marginTop: 10 },
+
+  // Relaxation Screen
+  techCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#142E27', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'transparent' },
+  techCardActive: { borderColor: COLORS.ACCENT_LIME, backgroundColor: COLORS.BG_CARD },
+  techTitle: { color: COLORS.TEXT_WHITE, fontSize: 16, fontWeight: 'bold' },
+  techTime: { color: COLORS.TEXT_SEC, fontSize: 12 },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.ACCENT_LIME },
+
+  timerContainer: { backgroundColor: '#1A382F', padding: 30, borderRadius: 16, alignItems: 'center', marginTop: 10, marginBottom: 20 },
+  timerText: { fontSize: 64, color: COLORS.TEXT_WHITE, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: 'bold', marginBottom: 20 },
+  timerControls: { flexDirection: 'row', gap: 20 },
+  playButton: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.ACCENT_LIME, alignItems: 'center', justifyContent: 'center' },
+  playIcon: { fontSize: 24, color: COLORS.TEXT_DARK },
+  resetButton: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#2D1F1C', alignItems: 'center', justifyContent: 'center' }, // Dark reddish brown for reset 
+  resetIcon: { fontSize: 24, color: COLORS.ACCENT_ORANGE },
+
+  // Tips Box
+  tipsBox: { backgroundColor: '#11221E', padding: 20, borderRadius: 12, borderTopWidth: 1, borderTopColor: COLORS.BG_CARD, marginTop: 10 },
+  tipsTitle: { color: '#FCD34D', fontSize: 16, fontWeight: 'bold', marginBottom: 12 }, // Yellowish for tips header
+  tipItem: { color: COLORS.TEXT_SEC, marginBottom: 8, fontSize: 14, lineHeight: 20 },
+
+  // Settings
+  langBtn: { flex: 1, padding: 16, backgroundColor: COLORS.BG_CARD, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
+  langBtnActive: { borderColor: COLORS.ACCENT_LIME },
+  langText: { color: COLORS.TEXT_WHITE },
+  apiKeyInput: { backgroundColor: '#0A1C18', color: COLORS.TEXT_WHITE, padding: 12, borderRadius: 8, width: '100%', borderWidth: 1, borderColor: COLORS.BG_CARD }
 });
