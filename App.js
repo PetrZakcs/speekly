@@ -645,14 +645,30 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete }) => {
     }
   };
 
+  // Determine API Endpoint
+  // If user provided their own key, use OpenAI direct.
+  // Otherwise, use our secure backend proxy.
+  const getApiConfig = () => {
+    if (apiKey) {
+      return { url: 'https://api.openai.com/v1/chat/completions', key: apiKey };
+    }
+    // Production usage: Point to our own Vercel API
+    // When running locally, this might fail unless we run 'vercel dev'
+    // But for production URL (e.g. speekly.vercel.app), this works.
+    return { url: '/api/chat', key: null };
+  };
+
   const analyzeRead = async (text) => {
-    const effectiveKey = apiKey || SYSTEM_API_KEY;
-    if (!effectiveKey) return;
     setIsProcessing(true);
+    const { url, key } = getApiConfig();
+
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const headers = { 'Content-Type': 'application/json' };
+      if (key) headers['Authorization'] = `Bearer ${key}`;
+
+      const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${effectiveKey}` },
+        headers: headers,
         body: JSON.stringify({
           model: "gpt-3.5-turbo",
           messages: [
@@ -665,37 +681,36 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete }) => {
       if (data.choices) {
         setAiFeedback(data.choices[0].message.content);
         if (onComplete) onComplete();
-        // Fire icon animation could go here, but Alert in App.js handles it for now
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "Could not connect to AI server. Please check your connection.");
+    }
     setIsProcessing(false);
   };
 
   const analyzeChat = async (userText) => {
-    const effectiveKey = apiKey || SYSTEM_API_KEY;
-    if (!effectiveKey) return;
-
-    const newUserMsg = { role: 'user', content: userText };
-    const updatedHistory = [...chatHistory, newUserMsg];
-    setChatHistory(updatedHistory);
-    setTranscript(''); // clear current input
-
+    const { url, key } = getApiConfig();
     setIsProcessing(true);
+
+    const newMsg = { role: 'user', content: userText };
+    const updatedHistory = [...chatHistory, newMsg];
+    setChatHistory(updatedHistory);
+
+    // Initial System Prompt based on Scenario
+    let sysMsg = { role: "system", content: "You are a helpful assistant." };
+    if (selectedScenario.id === 'job') sysMsg.content = "You are a strict HR manager conducting a job interview. Be professional but tough.";
+    if (selectedScenario.id === 'coffee') sysMsg.content = "You are a busy barista at a coffee shop. Take the order quickly.";
+    if (selectedScenario.id === 'social') sysMsg.content = "You are a friendly neighbor chatting about the weather.";
+    if (selectedScenario.id === 'custom') sysMsg.content = `Roleplay Scenario: ${customPromptInput || 'General Conversation'}. Stay in character.`;
+
     try {
-      let systemContent = selectedScenario.prompt;
+      const headers = { 'Content-Type': 'application/json' };
+      if (key) headers['Authorization'] = `Bearer ${key}`;
 
-      // Dynamic Prompt for Custom Scenario
-      if (selectedScenario.id === 'custom' && customPromptInput) {
-        systemContent = `You are roleplaying a specific scenario defined by the user: "${customPromptInput}". Act the part convincingly. Keep responses concise.`;
-      } else {
-        systemContent += " Keep your responses concise (1-2 sentences).";
-      }
-
-      const sysMsg = { role: "system", content: systemContent };
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${effectiveKey}` },
+        headers: headers,
         body: JSON.stringify({
           model: "gpt-3.5-turbo",
           messages: [sysMsg, ...updatedHistory]
