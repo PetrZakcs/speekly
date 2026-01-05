@@ -20,6 +20,7 @@ import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './lib/supabase';
 import { StatusBar } from 'expo-status-bar';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // --- Theme Constants (Forest Theme) ---
 const COLORS = {
