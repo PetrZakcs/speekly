@@ -310,40 +310,77 @@ const LandingScreen = ({ t, onGetStarted }) => {
           </View>
         </View>
 
-        {/* 4. Testimonials */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionHeader}>Success Stories</Text>
-          <ScrollView horizontal={!isDesktop} showsHorizontalScrollIndicator={false} style={!isDesktop ? { marginHorizontal: -24 } : {}}>
-            <View style={isDesktop ? { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 20 } : { flexDirection: 'row', paddingHorizontal: 24 }}>
+        {/* 4. Trust Section */}
+        <View style={[styles.sectionContainer, { backgroundColor: '#11221E', marginHorizontal: -24, paddingHorizontal: 24, paddingVertical: 40 }]}>
 
-              {/* Testimonial 1 */}
-              <View style={[styles.testimonialCard, !isDesktop && { width: 300, marginRight: 16 }]}>
-                <Text style={styles.quote}>"I've struggled with stuttering all my life. Speekly gave me the confidence to finally speak up in meetings."</Text>
-                <Text style={styles.author}>- Michael K., Student</Text>
-                <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
+          {/* Trust Badges */}
+          <View style={{ flexDirection: isDesktop ? 'row' : 'column', justifyContent: 'center', alignItems: 'center', gap: 30, marginBottom: 40 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Text style={{ fontSize: 32 }}>🩺</Text>
+              <View>
+                <Text style={{ color: COLORS.ACCENT_LIME, fontWeight: 'bold', fontSize: 16 }}>Developed with Speech Therapists</Text>
+                <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>Consulted by licensed professionals</Text>
               </View>
-
-              {/* Testimonial 2 */}
-              <View style={[styles.testimonialCard, !isDesktop && { width: 300, marginRight: 16 }]}>
-                <Text style={styles.quote}>"The SOS button saved me before my thesis defense. I was panicking, but 60 seconds later I was calm and ready."</Text>
-                <Text style={styles.author}>- Sarah M., PhD Candidate</Text>
-                <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Text style={{ fontSize: 32 }}>💚</Text>
+              <View>
+                <Text style={{ color: COLORS.ACCENT_LIME, fontWeight: 'bold', fontSize: 16 }}>Built by Stutterers</Text>
+                <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>We understand your struggle firsthand</Text>
               </View>
-
-              {/* Testimonial 3 */}
-              <View style={[styles.testimonialCard, !isDesktop && { width: 300, marginRight: 16 }]}>
-                <Text style={styles.quote}>"As someone with social anxiety, ordering coffee was terrifying. Now I practice scenarios daily and feel so much better."</Text>
-                <Text style={styles.author}>- James T., Developer</Text>
-                <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Text style={{ fontSize: 32 }}>🔒</Text>
+              <View>
+                <Text style={{ color: COLORS.ACCENT_LIME, fontWeight: 'bold', fontSize: 16 }}>100% Private</Text>
+                <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>Your recordings never leave your device</Text>
               </View>
+            </View>
+          </View>
 
-              {/* Testimonial 4 */}
-              <View style={[styles.testimonialCard, !isDesktop && { width: 300, marginRight: 16 }]}>
-                <Text style={styles.quote}>"My son uses Speekly every morning. His speech therapist noticed huge improvements in just 2 weeks!"</Text>
-                <Text style={styles.author}>- Linda P., Parent</Text>
-                <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
+          {/* Developer Story */}
+          <View style={{ backgroundColor: 'rgba(212, 238, 159, 0.05)', borderRadius: 16, padding: 24, borderLeftWidth: 4, borderLeftColor: COLORS.ACCENT_LIME, marginBottom: 40, maxWidth: 800, alignSelf: 'center' }}>
+            <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 16, lineHeight: 26, fontStyle: 'italic' }}>
+              "As someone who stuttered since childhood, I know the anxiety of phone calls, presentations, and even ordering food.
+              I built Speekly because I wished something like this existed when I was younger.
+              This isn't just an app – it's the tool I needed."
+            </Text>
+            <Text style={{ color: COLORS.ACCENT_LIME, marginTop: 12, fontWeight: 'bold' }}>— Founder, Speekly</Text>
+          </View>
+
+          {/* Floating Reviews - Single Line Marquee Style */}
+          <Text style={[styles.sectionHeader, { marginBottom: 20 }]}>What Users Say</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginHorizontal: -24 }}
+            contentContainerStyle={{ paddingHorizontal: 24 }}
+          >
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <View style={styles.reviewBubble}>
+                <Text style={styles.reviewText}>"Finally feel confident in meetings!" ⭐⭐⭐⭐⭐</Text>
+                <Text style={styles.reviewAuthor}>Michael K.</Text>
               </View>
-
+              <View style={styles.reviewBubble}>
+                <Text style={styles.reviewText}>"SOS button = lifesaver before my thesis defense" ⭐⭐⭐⭐⭐</Text>
+                <Text style={styles.reviewAuthor}>Sarah M.</Text>
+              </View>
+              <View style={styles.reviewBubble}>
+                <Text style={styles.reviewText}>"Ordering coffee is no longer terrifying" ⭐⭐⭐⭐⭐</Text>
+                <Text style={styles.reviewAuthor}>James T.</Text>
+              </View>
+              <View style={styles.reviewBubble}>
+                <Text style={styles.reviewText}>"My son improved in just 2 weeks!" ⭐⭐⭐⭐⭐</Text>
+                <Text style={styles.reviewAuthor}>Linda P.</Text>
+              </View>
+              <View style={styles.reviewBubble}>
+                <Text style={styles.reviewText}>"Better than expensive therapy sessions" ⭐⭐⭐⭐⭐</Text>
+                <Text style={styles.reviewAuthor}>David R.</Text>
+              </View>
+              <View style={styles.reviewBubble}>
+                <Text style={styles.reviewText}>"Use it every morning, life changing" ⭐⭐⭐⭐⭐</Text>
+                <Text style={styles.reviewAuthor}>Emma S.</Text>
+              </View>
             </View>
           </ScrollView>
         </View>
@@ -1471,6 +1508,21 @@ const styles = StyleSheet.create({
   quote: { fontSize: 18, color: COLORS.TEXT_WHITE, fontStyle: 'italic', marginBottom: 20, lineHeight: 28 },
   author: { color: COLORS.ACCENT_LIME, fontWeight: 'bold', fontSize: 14, marginBottom: 4 },
   stars: { fontSize: 12 },
+
+  // Review Bubbles (floating single-line)
+  reviewBubble: {
+    backgroundColor: '#1A382F',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 238, 159, 0.2)',
+    flexDirection: 'column',
+    alignItems: 'center',
+    minWidth: 200
+  },
+  reviewText: { color: COLORS.TEXT_WHITE, fontSize: 14, textAlign: 'center' },
+  reviewAuthor: { color: COLORS.ACCENT_LIME, fontSize: 12, fontWeight: 'bold', marginTop: 4 },
 
   // Offer Section
   offerContainer: { margin: 24, padding: 30, backgroundColor: 'linear-gradient(180deg, #1A382F 0%, #0F2822 100%)', borderRadius: 24, alignItems: 'center', borderWidth: 1, borderColor: COLORS.ACCENT_LIME, shadowColor: COLORS.ACCENT_LIME, shadowOpacity: 0.1, shadowRadius: 20 },
