@@ -1,8 +1,8 @@
-import Stripe from 'stripe';
+const Stripe = require('stripe');
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
     if (req.method !== 'POST') {
         res.setHeader('Allow', 'POST');
         return res.status(405).end('Method Not Allowed');
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
                         product_data: {
                             name: 'Speekly Lifetime Access', // Hardcoded product for simplicity
                             description: 'Unlimited AI Speech Therapy',
-                            images: ['https://speekly.app/icon-192.jpg'], // Optional: Use live URL
+                            images: ['https://speekly.vercel.app/icon-192.jpg'],
                         },
                         unit_amount: 10000, // $100.00
                     },
@@ -37,4 +37,4 @@ export default async function handler(req, res) {
         console.error('Stripe Error:', error);
         res.status(500).json({ error: error.message });
     }
-}
+};
