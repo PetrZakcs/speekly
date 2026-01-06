@@ -22,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './lib/supabase';
 import { StatusBar } from 'expo-status-bar';
 import AuthScreen from './components/AuthScreen';
+import { Analytics } from '@vercel/analytics/react';
 
 // --- Theme Constants (Forest Theme) ---
 const COLORS = {
@@ -1470,6 +1471,7 @@ export default function App() {
     return (
       <MobileContainer fullWidth={true}>
         <StatusBar style="light" />
+        <Analytics />
         <SafeAreaView style={styles.safeArea}>
           <LandingScreen t={t} onGetStarted={goToCheckout} />
         </SafeAreaView>
@@ -1496,7 +1498,7 @@ export default function App() {
   return (
     <MobileContainer fullWidth={true}>
       <StatusBar style="light" />
-      {Platform.OS === 'web' && <SpeedInsights />}
+      {Platform.OS === 'web' && <><Analytics /><SpeedInsights /></>}
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.contentContainer}>
           <View style={{ maxWidth: 1000, alignSelf: 'center', width: '100%', flex: 1 }}>
