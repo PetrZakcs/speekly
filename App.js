@@ -636,7 +636,7 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
                   <>
                     <Text style={{ fontSize: 20 }}>💳</Text>
                     <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>
-                      {isLoginMode ? 'Sign In & Pay' : t('pay_btn')}
+                      {isLoginMode ? 'Sign In' : t('pay_btn')}
                     </Text>
                   </>
                 )}
