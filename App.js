@@ -297,7 +297,7 @@ const LandingScreen = ({ t, onGetStarted }) => {
           <View style={gridStyle}>
             <View style={[styles.stepRow, cardStyle, isDesktop && { flexDirection: 'column', alignItems: 'center', textAlign: 'center' }]}>
               <View style={[styles.stepNumber, isDesktop && { marginBottom: 16, marginRight: 0 }]}><Text style={styles.stepNumText}>1</Text></View>
-              <View style={{ flex: 1 }}><Text style={[styles.stepTitle, isDesktop && { textAlign: 'center' }]}>Warm Up</Text><Text style={[styles.stepDesc, isDesktop && { textAlign: 'center' }]}>Start with a 3-minute guided breathing exercise.</Text></View>
+              <View style={{ flex: 1 }}><Text style={[styles.stepTitle, isDesktop && { textAlign: 'center' }]}>Warm Up</Text><Text style={[styles.stepDesc, isDesktop && { textAlign: 'center' }]}>Start with a 1-minute guided breathing exercise.</Text></View>
             </View>
             <View style={[styles.stepRow, cardStyle, isDesktop && { flexDirection: 'column', alignItems: 'center', textAlign: 'center' }]}>
               <View style={[styles.stepNumber, isDesktop && { marginBottom: 16, marginRight: 0 }]}><Text style={styles.stepNumText}>2</Text></View>
@@ -313,11 +313,39 @@ const LandingScreen = ({ t, onGetStarted }) => {
         {/* 4. Testimonials */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionHeader}>Success Stories</Text>
-          <View style={styles.testimonialCard}>
-            <Text style={[styles.quote, isDesktop && { textAlign: 'center', fontSize: 24 }]}>"I've struggled with stuttering all my life. Speekly gave me the confidence to finally speak up in meetings."</Text>
-            <Text style={[styles.author, isDesktop && { textAlign: 'center' }]}>- Michael, Student</Text>
-            <Text style={[styles.stars, isDesktop && { textAlign: 'center' }]}>⭐⭐⭐⭐⭐</Text>
-          </View>
+          <ScrollView horizontal={!isDesktop} showsHorizontalScrollIndicator={false} style={!isDesktop ? { marginHorizontal: -24 } : {}}>
+            <View style={isDesktop ? { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 20 } : { flexDirection: 'row', paddingHorizontal: 24 }}>
+
+              {/* Testimonial 1 */}
+              <View style={[styles.testimonialCard, !isDesktop && { width: 300, marginRight: 16 }]}>
+                <Text style={styles.quote}>"I've struggled with stuttering all my life. Speekly gave me the confidence to finally speak up in meetings."</Text>
+                <Text style={styles.author}>- Michael K., Student</Text>
+                <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
+              </View>
+
+              {/* Testimonial 2 */}
+              <View style={[styles.testimonialCard, !isDesktop && { width: 300, marginRight: 16 }]}>
+                <Text style={styles.quote}>"The SOS button saved me before my thesis defense. I was panicking, but 60 seconds later I was calm and ready."</Text>
+                <Text style={styles.author}>- Sarah M., PhD Candidate</Text>
+                <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
+              </View>
+
+              {/* Testimonial 3 */}
+              <View style={[styles.testimonialCard, !isDesktop && { width: 300, marginRight: 16 }]}>
+                <Text style={styles.quote}>"As someone with social anxiety, ordering coffee was terrifying. Now I practice scenarios daily and feel so much better."</Text>
+                <Text style={styles.author}>- James T., Developer</Text>
+                <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
+              </View>
+
+              {/* Testimonial 4 */}
+              <View style={[styles.testimonialCard, !isDesktop && { width: 300, marginRight: 16 }]}>
+                <Text style={styles.quote}>"My son uses Speekly every morning. His speech therapist noticed huge improvements in just 2 weeks!"</Text>
+                <Text style={styles.author}>- Linda P., Parent</Text>
+                <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
+              </View>
+
+            </View>
+          </ScrollView>
         </View>
 
         {/* 5. Lifetime Offer */}
