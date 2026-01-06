@@ -441,6 +441,7 @@ const Navbar = ({ activeTab, onTabChange, t }) => (
 const CheckoutScreen = ({ t, onComplete, onBack }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [isLoginMode, setIsLoginMode] = useState(false); // Toggle between signup and login
   const { width } = Dimensions.get('window');
   const isDesktop = width > 800;
 
@@ -463,14 +464,38 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
     setError('');
 
     try {
-      // 1. First, create Supabase account
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password
-      });
+      if (isLoginMode) {
+        // LOGIN MODE - For existing users
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
 
-      if (authError && !authError.message.includes('already registered')) {
-        throw new Error(authError.message);
+        if (authError) {
+          throw new Error(authError.message);
+        }
+
+        // Check if user is premium
+        const { data: profile } = await supabase.from('profiles').select('is_premium').eq('id', authData.user.id).single();
+
+        if (profile?.is_premium) {
+          // Already premium - go to app
+          await AsyncStorage.setItem('is_premium', 'true');
+          Alert.alert('Welcome back!', 'You already have premium access.');
+          onComplete();
+          return;
+        }
+        // Not premium yet - continue to payment
+      } else {
+        // SIGNUP MODE - Create new account
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password
+        });
+
+        if (authError && !authError.message.includes('already registered')) {
+          throw new Error(authError.message);
+        }
       }
 
       // 2. Call our Stripe checkout API
@@ -500,7 +525,7 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
     } catch (err) {
       console.error('Checkout error:', err);
       setError(err.message || 'Payment failed. Please try again.');
-      Alert.alert('Payment Error', err.message || 'Something went wrong. Please try again.');
+      Alert.alert('Error', err.message || 'Something went wrong. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -548,7 +573,24 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
           {/* Right Column: Payment Form */}
           <View style={isDesktop ? { flex: 1 } : {}}>
             <View style={styles.checkoutCard}>
-              <Text style={styles.inputLabel}>{t('create_acc')}</Text>
+
+              {/* Login/Signup Toggle */}
+              <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', padding: 4, borderRadius: 12, marginBottom: 20 }}>
+                <TouchableOpacity
+                  style={{ flex: 1, padding: 12, alignItems: 'center', borderRadius: 8, backgroundColor: !isLoginMode ? COLORS.ACCENT_LIME : 'transparent' }}
+                  onPress={() => setIsLoginMode(false)}
+                >
+                  <Text style={{ fontWeight: 'bold', color: !isLoginMode ? COLORS.BG_DARK : COLORS.TEXT_SEC }}>New Account</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ flex: 1, padding: 12, alignItems: 'center', borderRadius: 8, backgroundColor: isLoginMode ? COLORS.ACCENT_LIME : 'transparent' }}
+                  onPress={() => setIsLoginMode(true)}
+                >
+                  <Text style={{ fontWeight: 'bold', color: isLoginMode ? COLORS.BG_DARK : COLORS.TEXT_SEC }}>I Have Account</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.inputLabel}>{isLoginMode ? 'Sign In' : t('create_acc')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Email address"
@@ -560,7 +602,7 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Choose Password (min 6 chars)"
+                placeholder={isLoginMode ? "Your password" : "Choose Password (min 6 chars)"}
                 secureTextEntry
                 placeholderTextColor="#556"
                 value={password}
@@ -593,7 +635,9 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
                 ) : (
                   <>
                     <Text style={{ fontSize: 20 }}>💳</Text>
-                    <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>{t('pay_btn')}</Text>
+                    <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>
+                      {isLoginMode ? 'Sign In & Pay' : t('pay_btn')}
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
