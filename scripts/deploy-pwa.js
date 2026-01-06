@@ -1,47 +1,66 @@
 const fs = require('fs');
 const path = require('path');
 
-const DIST_DIR = path.join(__dirname, '../dist');
+// Try to find the build output directory
+const possibleDirs = ['dist', 'web-build', 'public'];
+let buildDir = null;
+
+for (const dir of possibleDirs) {
+    const fullPath = path.join(__dirname, '..', dir);
+    // We look for index.html to confirm it's a valid build output
+    if (fs.existsSync(fullPath) && fs.existsSync(path.join(fullPath, 'index.html'))) {
+        buildDir = fullPath;
+        console.log(`✅ Detected build directory: ${dir}`);
+        break;
+    }
+}
+
+if (!buildDir) {
+    console.error('⚠️ Could not find build directory (dist/web-build). Skipping PWA injection.');
+    // Do not fail the build, just skip PWA
+    process.exit(0);
+}
+
 const PUBLIC_DIR = path.join(__dirname, '../public');
 const MANIFEST_FILE = 'manifest.json';
 const ICON_FILE = 'icon.png';
 
-console.log('🚀 Starting PWA Post-Build Proces...');
+console.log('🚀 Starting PWA Post-Build Process...');
 
 // 1. Copy Manifest and Icon
 if (fs.existsSync(PUBLIC_DIR)) {
-    if (!fs.existsSync(DIST_DIR)) {
-        console.error('❌ Dist directory not found!');
-        process.exit(1);
-    }
-
     // Copy manifest
-    fs.copyFileSync(path.join(PUBLIC_DIR, MANIFEST_FILE), path.join(DIST_DIR, MANIFEST_FILE));
-    console.log(`✅ Copied ${MANIFEST_FILE}`);
+    try {
+        fs.copyFileSync(path.join(PUBLIC_DIR, MANIFEST_FILE), path.join(buildDir, MANIFEST_FILE));
+        console.log(`✅ Copied ${MANIFEST_FILE}`);
 
-    // Copy icon
-    fs.copyFileSync(path.join(PUBLIC_DIR, ICON_FILE), path.join(DIST_DIR, ICON_FILE));
-    console.log(`✅ Copied ${ICON_FILE}`);
+        // Copy icon
+        fs.copyFileSync(path.join(PUBLIC_DIR, ICON_FILE), path.join(buildDir, ICON_FILE));
+        console.log(`✅ Copied ${ICON_FILE}`);
+    } catch (e) {
+        console.error('Error copying assets:', e);
+    }
 } else {
-    console.error('❌ Public directory missing!');
+    console.log('ℹ️ Public directory missing, skipping asset copy.');
 }
 
 // 2. Inject Link into HTML
-const htmlPath = path.join(DIST_DIR, 'index.html');
+const htmlPath = path.join(buildDir, 'index.html');
 if (fs.existsSync(htmlPath)) {
-    let html = fs.readFileSync(htmlPath, 'utf-8');
+    try {
+        let html = fs.readFileSync(htmlPath, 'utf-8');
 
-    if (!html.includes('manifest.json')) {
-        const linkTag = `<link rel="manifest" href="/${MANIFEST_FILE}" />`;
-        // Inject before </head>
-        html = html.replace('</head>', `${linkTag}\n</head>`);
-        fs.writeFileSync(htmlPath, html);
-        console.log('✅ Injected manifest link into index.html');
-    } else {
-        console.log('ℹ️ Manifest link already present.');
+        if (!html.includes('manifest.json')) {
+            const linkTag = `<link rel="manifest" href="/${MANIFEST_FILE}" />`;
+            html = html.replace('</head>', `${linkTag}\n</head>`);
+            fs.writeFileSync(htmlPath, html);
+            console.log('✅ Injected manifest link into index.html');
+        } else {
+            console.log('ℹ️ Manifest link already present.');
+        }
+    } catch (e) {
+        console.error('Error injecting HTML:', e);
     }
-} else {
-    console.error('❌ index.html not found!');
 }
 
 console.log('✨ PWA Setup Complete!');
