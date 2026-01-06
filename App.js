@@ -29,7 +29,7 @@ const COLORS = {
   BG_CARD: '#1A382F',       // Lighter Green Surface
   ACCENT_LIME: '#D4EE9F',   // Primary Action
   ACCENT_ORANGE: '#F97316', // Alerts/Highlights
-  TEXT_WHITE: '#F5F5F',
+  TEXT_WHITE: '#F5F5F5',
   TEXT_SEC: '#AABEB8',      // Muted Green-Grey
   TEXT_DARK: '#0F2822',     // Text on Lime
   MIC_BG: '#D4EE9F',
@@ -370,7 +370,7 @@ const Navbar = ({ activeTab, onTabChange, t }) => (
 // --- SCREENS ---
 
 const CheckoutScreen = ({ t, onComplete, onBack }) => {
-  const [loading, setLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { width } = Dimensions.get('window');
   const isDesktop = width > 800;
 
@@ -445,7 +445,7 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
                 style={{ backgroundColor: '#635BFF', paddingVertical: 18, borderRadius: 12, alignItems: 'center', marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 10 }}
                 onPress={handlePay}
               >
-                {loading ? (
+                {isProcessing ? (
                   <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>Redirecting...</Text>
                 ) : (
                   <>
