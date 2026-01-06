@@ -1,28 +1,37 @@
 const Stripe = require('stripe');
 
+// Safe entry point for Vercel Serverless Function
 module.exports = async (req, res) => {
-    // Debug logging
-    console.log('Checkout API invoked');
+    console.log('Checkout API Invoked. Method:', req.method);
 
+    // 1. Allow GET requests for debugging (so you can open it in browser)
+    if (req.method === 'GET') {
+        return res.status(200).json({
+            status: 'API Online 🟢',
+            message: 'Checkout endpoint is reachable.',
+            environment: process.env.NODE_ENV
+        });
+    }
+
+    // 2. Enforce POST for actual payments
     if (req.method !== 'POST') {
         res.setHeader('Allow', 'POST');
         return res.status(405).send('Method Not Allowed');
     }
 
-    // 1. Check Env Var explicitly inside the handler
+    // 3. Verify Stripe Key exists
     if (!process.env.STRIPE_SECRET_KEY) {
-        console.error('CRITICAL: STRIPE_SECRET_KEY is missing in environment variables.');
-        return res.status(500).json({
-            error: 'Server misconfiguration: Payment provider key is missing.'
-        });
+        console.error('CRITICAL: Missing STRIPE_SECRET_KEY');
+        return res.status(500).json({ error: 'Server misconfiguration: Stripe Key missing.' });
     }
 
     try {
-        // 2. Initialize Stripe lazily (inside handler) to prevent cold-start crashes
+        // 4. Initialize Stripe
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
         const { successUrl, cancelUrl } = req.body;
 
+        // 5. Create Session
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [
@@ -44,10 +53,9 @@ module.exports = async (req, res) => {
             cancel_url: cancelUrl || 'https://speekly.vercel.app/?canceled=true',
         });
 
-        console.log('Session created successfully:', session.id);
         res.status(200).json({ url: session.url });
     } catch (error) {
-        console.error('Stripe Execution Error:', error);
+        console.error('Stripe Exception:', error);
         res.status(500).json({ error: error.message });
     }
 };
