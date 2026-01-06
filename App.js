@@ -264,25 +264,29 @@ const LandingScreen = ({ t, onGetStarted }) => {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionHeader}>{t('why_us')}</Text>
           <View style={gridStyle}>
+            {/* SOS Panic Button - FEATURED */}
+            <View style={[styles.benefitCard, cardStyle, {
+              borderColor: COLORS.ACCENT_ORANGE,
+              borderWidth: 2,
+              backgroundColor: 'rgba(249, 115, 22, 0.1)',
+              transform: [{ scale: 1 }]
+            }]}>
+              <View style={{ position: 'absolute', top: -12, right: 16, backgroundColor: COLORS.ACCENT_ORANGE, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 }}>
+                <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold' }}>⭐ MOST POPULAR</Text>
+              </View>
+              <Text style={styles.benefitIcon}>🚨</Text>
+              <Text style={[styles.benefitTitle, { color: COLORS.ACCENT_ORANGE, fontSize: 22 }]}>SOS Panic Button</Text>
+              <Text style={styles.benefitDesc}>Presentation in 5 minutes? Exam anxiety? Get immediate calm with our emergency breathing guide. Works in seconds!</Text>
+            </View>
             <View style={[styles.benefitCard, cardStyle]}>
               <Text style={styles.benefitIcon}>🛡️</Text>
               <Text style={styles.benefitTitle}>Safe Space</Text>
               <Text style={styles.benefitDesc}>No judgment, no pressure. Practice at your own pace without the fear of public speaking.</Text>
             </View>
             <View style={[styles.benefitCard, cardStyle]}>
-              <Text style={styles.benefitIcon}>🗣️</Text>
-              <Text style={styles.benefitTitle}>Articulation Mastery</Text>
-              <Text style={styles.benefitDesc}>Personalized exercises for tongue twisters, pronunciation, and pacing control.</Text>
-            </View>
-            <View style={[styles.benefitCard, cardStyle]}>
               <Text style={styles.benefitIcon}>🌬️</Text>
               <Text style={styles.benefitTitle}>Anxiety Control</Text>
               <Text style={styles.benefitDesc}>Integrated breathing and relaxation techniques to calm your nerves before you speak.</Text>
-            </View>
-            <View style={[styles.benefitCard, cardStyle, { borderColor: COLORS.ACCENT_ORANGE }]}>
-              <Text style={styles.benefitIcon}>🚨</Text>
-              <Text style={[styles.benefitTitle, { color: COLORS.ACCENT_ORANGE }]}>SOS Panic Button</Text>
-              <Text style={styles.benefitDesc}>Immediate help for unexpected speaking events (exams, presentations). Calm down in seconds.</Text>
             </View>
           </View>
         </View>
