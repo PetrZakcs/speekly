@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "npx expo export -p web && node scripts/deploy-pwa.js",
+    "build": "npx expo export -p web --output-dir dist && node scripts/deploy-pwa.js",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
