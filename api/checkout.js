@@ -1,9 +1,6 @@
-// Checkout API - Stripe integration removed
-// This is a placeholder that informs users payment is disabled
+const Stripe = require('stripe');
 
 module.exports = async (req, res) => {
-    console.log('Checkout API Invoked. Method:', req.method);
-
     // CORS Headers
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -14,24 +11,66 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
-    // 1. Allow GET requests for debugging
+    // GET - Health check
     if (req.method === 'GET') {
         return res.status(200).json({
-            status: 'API Online 🟢',
-            message: 'Checkout endpoint is reachable. Payment integration is currently disabled.',
-            environment: process.env.NODE_ENV
+            status: 'Stripe API Online 🟢',
+            configured: !!process.env.STRIPE_SECRET_KEY
         });
     }
 
-    // 2. POST - Return info that payment is disabled
-    if (req.method === 'POST') {
+    // POST - Create checkout session
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // Verify Stripe key
+    if (!process.env.STRIPE_SECRET_KEY) {
+        console.error('Missing STRIPE_SECRET_KEY');
+        return res.status(500).json({ error: 'Payment system not configured' });
+    }
+
+    try {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+        const { email, successUrl, cancelUrl } = req.body;
+
+        // Get the origin for redirect URLs
+        const origin = req.headers.origin || 'https://speekly.vercel.app';
+
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            customer_email: email || undefined,
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: 'Speekly Lifetime Access',
+                            description: 'Unlimited AI Speech Therapy - One-time payment',
+                            images: [`${origin}/icon.png`],
+                        },
+                        unit_amount: 10000, // $100.00 in cents
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: successUrl || `${origin}/?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: cancelUrl || `${origin}/?payment=canceled`,
+            metadata: {
+                product: 'lifetime_access',
+                email: email || 'anonymous'
+            }
+        });
+
+        console.log('Checkout session created:', session.id);
         return res.status(200).json({
-            success: false,
-            message: 'Payment integration is currently disabled. Please contact support.',
-            url: null
+            url: session.url,
+            sessionId: session.id
         });
-    }
 
-    res.setHeader('Allow', 'GET, POST');
-    return res.status(405).send('Method Not Allowed');
+    } catch (error) {
+        console.error('Stripe Error:', error.message);
+        return res.status(500).json({ error: error.message });
+    }
 };

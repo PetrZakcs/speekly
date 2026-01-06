@@ -371,6 +371,7 @@ const Navbar = ({ activeTab, onTabChange, t }) => (
 
 const CheckoutScreen = ({ t, onComplete, onBack }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState('');
   const { width } = Dimensions.get('window');
   const isDesktop = width > 800;
 
@@ -378,19 +379,62 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Cleaned up unused card state
+  const handlePay = async () => {
+    // Validate inputs
+    if (!email || !email.includes('@')) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+    if (!password || password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
 
-  // Placeholder Stripe Link (User should replace this)
-  const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/test_123456789';
-
-  const handlePay = () => {
     setIsProcessing(true);
-    // Mock / Placeholder
-    setTimeout(() => {
+    setError('');
+
+    try {
+      // 1. First, create Supabase account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password
+      });
+
+      if (authError && !authError.message.includes('already registered')) {
+        throw new Error(authError.message);
+      }
+
+      // 2. Call our Stripe checkout API
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (data.url) {
+        // 3. Redirect to Stripe Checkout
+        if (Platform.OS === 'web') {
+          window.location.href = data.url;
+        } else {
+          Linking.openURL(data.url);
+        }
+      } else {
+        throw new Error('No checkout URL received');
+      }
+
+    } catch (err) {
+      console.error('Checkout error:', err);
+      setError(err.message || 'Payment failed. Please try again.');
+      Alert.alert('Payment Error', err.message || 'Something went wrong. Please try again.');
+    } finally {
       setIsProcessing(false);
-      Alert.alert(t('pay_btn'), "Payment integration is currently disabled.\n\n(Stripe removed by user request).");
-      // onComplete(); // Uncomment to allow bypass if desired
-    }, 1000);
+    }
   };
 
   return (
@@ -436,17 +480,47 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
           <View style={isDesktop ? { flex: 1 } : {}}>
             <View style={styles.checkoutCard}>
               <Text style={styles.inputLabel}>{t('create_acc')}</Text>
-              <TextInput style={styles.input} placeholder="Email address" placeholderTextColor="#556" autoCapitalize="none" value={email} onChangeText={setEmail} />
-              <TextInput style={styles.input} placeholder="Choose Password" secureTextEntry placeholderTextColor="#556" value={password} onChangeText={setPassword} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email address"
+                placeholderTextColor="#556"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Choose Password (min 6 chars)"
+                secureTextEntry
+                placeholderTextColor="#556"
+                value={password}
+                onChangeText={setPassword}
+              />
+
+              {error ? (
+                <Text style={{ color: COLORS.ACCENT_ORANGE, marginBottom: 10, textAlign: 'center' }}>{error}</Text>
+              ) : null}
 
               <Text style={styles.inputLabel}>{t('pay_method')}</Text>
 
               <TouchableOpacity
-                style={{ backgroundColor: '#635BFF', paddingVertical: 18, borderRadius: 12, alignItems: 'center', marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 10 }}
+                style={{
+                  backgroundColor: isProcessing ? '#4a4a8f' : '#635BFF',
+                  paddingVertical: 18,
+                  borderRadius: 12,
+                  alignItems: 'center',
+                  marginBottom: 20,
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 10,
+                  opacity: isProcessing ? 0.7 : 1
+                }}
                 onPress={handlePay}
+                disabled={isProcessing}
               >
                 {isProcessing ? (
-                  <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>Redirecting...</Text>
+                  <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>Processing...</Text>
                 ) : (
                   <>
                     <Text style={{ fontSize: 20 }}>💳</Text>
@@ -1191,6 +1265,28 @@ export default function App() {
 
       if (l) setLanguage(l);
       if (k) setApiKey(k);
+
+      // Check for payment success from URL (Stripe redirect)
+      if (Platform.OS === 'web') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentStatus = urlParams.get('payment');
+        const sessionId = urlParams.get('session_id');
+
+        if (paymentStatus === 'success') {
+          // Payment successful - unlock premium
+          await AsyncStorage.setItem('is_premium', 'true');
+          setCurrentScreen('app');
+          Alert.alert('🎉 Payment Successful!', 'Welcome to Speekly Premium! You now have unlimited access.');
+          // Clean URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setIsReady(true);
+          return;
+        } else if (paymentStatus === 'canceled') {
+          // Payment was canceled
+          Alert.alert('Payment Canceled', 'Your payment was canceled. You can try again anytime.');
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
 
       // Auto-Login if Premium
       if (isPremium === 'true') {
