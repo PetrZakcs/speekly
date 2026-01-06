@@ -1,19 +1,41 @@
 {
-    "buildCommand": "npm run build",
-    "outputDirectory": "dist",
-    "rewrites": [
+    "builds": [
         {
-            "source": "/api/:path*",
-            "destination": "/api/:path*"
+            "src": "api/*.js",
+            "use": "@vercel/node"
         },
         {
-            "source": "/((?!api/).*)",
-            "destination": "/index.html"
+            "src": "package.json",
+            "use": "@vercel/static-build",
+            "config": {
+                "distDir": "dist"
+            }
         }
     ],
-    "functions": {
-        "api/*.js": {
-            "runtime": "nodejs18.x"
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "/api/$1"
+        },
+        {
+            "src": "/_expo/(.*)",
+            "dest": "/_expo/$1"
+        },
+        {
+            "src": "/favicon.ico",
+            "dest": "/favicon.ico"
+        },
+        {
+            "src": "/manifest.json",
+            "dest": "/manifest.json"
+        },
+        {
+            "src": "/icon.png",
+            "dest": "/icon.png"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/index.html"
         }
-    }
+    ]
 }
