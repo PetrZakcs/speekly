@@ -384,23 +384,34 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
   const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/test_123456789';
 
   const handlePay = async () => {
-    // 1. Call our secure backend to get the Stripe URL
     setIsProcessing(true);
     try {
-      const response = await fetch('/api/checkout', {
+      // Use fallback for non-web platforms if needed, though we primarily target web
+      const baseUrl = Platform.OS === 'web' ? '' : 'https://speekly.vercel.app';
+      const apiUrl = `${baseUrl}/api/checkout`;
+
+      console.log('Fetching:', apiUrl); // Debug
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // Determine redirects based on current URL or defaults
           successUrl: (Platform.OS === 'web' ? window.location.origin : 'https://speekly.vercel.app') + '?success=true',
           cancelUrl: (Platform.OS === 'web' ? window.location.origin : 'https://speekly.vercel.app') + '?canceled=true',
         }),
       });
 
+      if (!response.ok) {
+        // If 404 or 500, read the text
+        const errorText = await response.text();
+        Alert.alert('Server Error', `Status: ${response.status}\n${errorText}`);
+        setIsProcessing(false);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.url) {
-        // 2. Redirect to Stripe
         if (Platform.OS === 'web') {
           window.location.href = data.url;
         } else {
@@ -412,7 +423,7 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Network request failed. Please try again.');
+      Alert.alert('Network Error', `Request Failed: ${error.message}`);
       setIsProcessing(false);
     }
   };
