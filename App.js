@@ -21,6 +21,7 @@ import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './lib/supabase';
 import { StatusBar } from 'expo-status-bar';
+import AuthScreen from './components/AuthScreen';
 
 // --- Theme Constants (Forest Theme) ---
 const COLORS = {
@@ -383,56 +384,37 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
   const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/test_123456789';
 
   const handlePay = async () => {
-    if (!email || !password) {
-      Alert.alert('Missing Information', 'Please create your account (Email & Password) first.');
-      return;
-    }
+    // 1. Call our secure backend to get the Stripe URL
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // Determine redirects based on current URL or defaults
+          successUrl: (Platform.OS === 'web' ? window.location.origin : 'https://speekly.vercel.app') + '?success=true',
+          cancelUrl: (Platform.OS === 'web' ? window.location.origin : 'https://speekly.vercel.app') + '?canceled=true',
+        }),
+      });
 
-    // VIP / Investor Bypass
-    const isVip =
-      email.toLowerCase().includes('admin') ||
-      email.toLowerCase().includes('investor') ||
-      (email.toLowerCase() === 'petr@speekly.com' && password === 'PetrAdmin1011');
+      const data = await response.json();
 
-    if (isVip) {
-      setLoading(true);
-      setTimeout(() => {
-        Alert.alert("VIP Access Granted", "Welcome aboard! No payment required.");
-        setLoading(false);
-        onComplete();
-      }, 1000);
-      return;
-    }
-
-    setLoading(true);
-
-    // 1. Open Stripe
-    // In a real app, you would pass the email as a query param like ?prefilled_email=${email}
-    const supported = await Linking.canOpenURL(STRIPE_PAYMENT_LINK);
-    if (supported) {
-      await Linking.openURL(STRIPE_PAYMENT_LINK);
-    } else {
-      Alert.alert("Error", "Cannot open payment link.");
-      setLoading(false);
-      return;
-    }
-
-    // 2. Wait for user to come back manually (MVP)
-    // In production, you would use Deep Linking (e.g. speekly://success) or wait for a Supabase webhook.
-    Alert.alert(
-      "Payment Window Opened",
-      "Please complete the payment in the browser window.\n\nDid you finish the payment?",
-      [
-        { text: "No, Cancel", onPress: () => setLoading(false), style: "cancel" },
-        {
-          text: "Yes, I Paid",
-          onPress: () => {
-            setLoading(false);
-            onComplete();
-          }
+      if (data.url) {
+        // 2. Redirect to Stripe
+        if (Platform.OS === 'web') {
+          window.location.href = data.url;
+        } else {
+          await Linking.openURL(data.url);
         }
-      ]
-    );
+      } else {
+        Alert.alert('Payment Error', data.error || 'Could not initiate checkout.');
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Network request failed. Please try again.');
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -1123,9 +1105,31 @@ const SosScreen = ({ t, onExit }) => {
   );
 };
 
-const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset }) => (
+const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset, user, onLogin }) => (
   <ScrollView style={styles.screenScroll}>
     <Text style={styles.headerTitle}>{t('settings')}</Text>
+
+    {/* Account Section */}
+    <Text style={styles.sectionLabel}>Account / Účet</Text>
+    <View style={{ marginBottom: 20, padding: 16, backgroundColor: 'rgba(212,238,159,0.05)', borderRadius: 12 }}>
+      {user ? (
+        <>
+          <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
+            👤 {user.email}
+          </Text>
+          <TouchableOpacity style={[styles.limeButton, { backgroundColor: '#333', height: 44 }]} onPress={() => supabase.auth.signOut()}>
+            <Text style={{ color: '#fff', fontWeight: 'bold' }}>Sign Out</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <Text style={{ color: COLORS.TEXT_SEC, marginBottom: 12 }}>Sync your progress across devices.</Text>
+          <TouchableOpacity style={styles.limeButton} onPress={onLogin}>
+            <Text style={styles.limeButtonText}>Sign In / Register</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
 
     <Text style={styles.sectionLabel}>Language / Jazyk</Text>
     <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
@@ -1168,7 +1172,27 @@ const SYSTEM_API_KEY = "";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('home');
+  // --- STATE ---
+  const [activeTab, setActiveTab] = useState('home'); // home | relax | practice | settings | sos | auth
+  const [user, setUser] = useState(null);
+
+  // --- AUTH EFFECT ---
+  useEffect(() => {
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user && activeTab === 'auth') {
+        setActiveTab('home'); // Auto-redirect after login
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
   const [currentScreen, setCurrentScreen] = useState('landing'); // landing | checkout | app
   const [language, setLanguage] = useState('en');
   const [apiKey, setApiKey] = useState('');
@@ -1294,8 +1318,9 @@ export default function App() {
             {activeTab === 'home' && <HomeScreen t={t} streak={streak} onStartRelax={() => setActiveTab('relax')} onStartSos={() => setActiveTab('sos')} />}
             {activeTab === 'relax' && <RelaxationScreen t={t} onComplete={markPracticeComplete} />}
             {activeTab === 'practice' && <PracticeScreen t={t} language={language} apiKey={apiKey} onComplete={markPracticeComplete} />}
-            {activeTab === 'settings' && <SettingsScreen t={t} language={language} setLanguage={saveLang} apiKey={apiKey} setApiKey={saveKey} onReset={handleReset} />}
+            {activeTab === 'settings' && <SettingsScreen t={t} language={language} setLanguage={saveLang} apiKey={apiKey} setApiKey={saveKey} onReset={handleReset} onLogin={() => setActiveTab('auth')} user={user} />}
             {activeTab === 'sos' && <SosScreen t={t} onExit={() => setActiveTab('home')} />}
+            {activeTab === 'auth' && <AuthScreen t={t} colors={COLORS} onLoginSuccess={() => setActiveTab('home')} onCancel={() => setActiveTab('home')} />}
           </View>
         </View>
         <Navbar activeTab={activeTab} onTabChange={setActiveTab} t={t} />
