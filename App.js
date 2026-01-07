@@ -905,21 +905,37 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
 
       {/* Install Banner */}
       {showInstall && (
-        <View style={styles.installBanner}>
+        <TouchableOpacity
+          style={{
+            backgroundColor: 'rgba(212,238,159,0.15)',
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: COLORS.ACCENT_LIME,
+            flexDirection: 'row',
+            alignItems: 'center'
+          }}
+          onPress={() => {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const instructions = isIOS
+              ? `📱 Install Speekly on iPhone:\n\n1️⃣ Tap the Share button ⬆️ at the bottom of Safari\n\n2️⃣ Scroll down in the menu\n\n3️⃣ Tap "Add to Home Screen"\n\n4️⃣ Tap "Add" in the top right\n\n✨ Done! Speekly will appear on your home screen.`
+              : `📱 Install Speekly on Android:\n\n1️⃣ Tap the menu ⋮ (three dots) in the top right\n\n2️⃣ Tap "Install app" or "Add to Home screen"\n\n3️⃣ Confirm the installation\n\n✨ Done! Speekly will appear on your home screen.`;
+            Alert.alert("📲 Install Speekly", instructions);
+          }}
+        >
+          <Text style={{ fontSize: 32, marginRight: 12 }}>📲</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.installTitle}>📱 Install Speekly</Text>
-            <Text style={styles.installDesc}>Add to Home Screen for quick access</Text>
+            <Text style={{ color: COLORS.ACCENT_LIME, fontWeight: 'bold', fontSize: 16 }}>Install App</Text>
+            <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>Tap here for instructions</Text>
           </View>
           <TouchableOpacity
-            style={styles.smallButton}
-            onPress={() => Alert.alert("Install Guide", "iOS: Tap Share → Add to Home Screen\nAndroid: Tap Menu → Install App")}
+            onPress={(e) => { e.stopPropagation(); setShowInstall(false); }}
+            style={{ padding: 8 }}
           >
-            <Text style={styles.smallButtonText}>Install</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowInstall(false)} style={{ marginLeft: 8 }}>
             <Text style={{ color: COLORS.TEXT_SEC, fontSize: 18 }}>✕</Text>
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
       )}
 
       <View style={{ height: 30 }} />
