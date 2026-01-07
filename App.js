@@ -1015,7 +1015,7 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete }) => {
         ))}
       </View>
 
-      {!apiKey && !SYSTEM_API_KEY && <Text style={{ color: COLORS.ACCENT_ORANGE, textAlign: 'center', marginTop: 10 }}>⚠️ {t('login_api')}</Text>}
+      {/* API key warning removed - backend proxy handles auth */}
 
     </ScrollView>
   );
@@ -1337,9 +1337,9 @@ const SCENARIOS = {
   // ... (previous content)
 };
 
-// ⚠️ REPLACE THIS WITH YOUR REAL OPENAI KEY FOR PRODUCTION
-// For client-side demos only. In production, use a backend proxy.
-const SYSTEM_API_KEY = "";
+// Backend API handles OpenAI calls - no client key needed
+// Set to 'backend' to indicate we're using server-side proxy
+const SYSTEM_API_KEY = "backend";
 
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
