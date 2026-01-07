@@ -1193,6 +1193,31 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
         <Text style={styles.headerSubtitle}>{getMotivationalMessage()}</Text>
       </View>
 
+      {/* Quick SOS Access - TOP PRIORITY */}
+      <TouchableOpacity
+        style={{
+          backgroundColor: 'rgba(249,115,22,0.15)',
+          borderRadius: 16,
+          padding: 20,
+          marginBottom: 25,
+          borderWidth: 2,
+          borderColor: COLORS.ACCENT_ORANGE,
+          flexDirection: 'row',
+          alignItems: 'center',
+          shadowColor: COLORS.ACCENT_ORANGE, shadowOpacity: 0.2, shadowRadius: 8
+        }}
+        onPress={onStartSos}
+      >
+        <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.ACCENT_ORANGE, alignItems: 'center', justifyContent: 'center', marginRight: 15 }}>
+          <Text style={{ fontSize: 24 }}>🚨</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 20, fontWeight: 'bold' }}>PANIC BUTTON</Text>
+          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 13 }}>Instant calm & emergency help</Text>
+        </View>
+        <Text style={{ color: COLORS.ACCENT_ORANGE, fontSize: 24, fontWeight: 'bold' }}>→</Text>
+      </TouchableOpacity>
+
       {/* Daily Challenge Card - New Feature */}
       <View style={{ marginBottom: 25 }}>
         <Text style={styles.sectionLabel}>🎯 {t('hello').includes('Ahoj') ? 'Dnešní výzva' : 'Usage Mission'}</Text>
