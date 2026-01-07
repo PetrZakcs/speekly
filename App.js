@@ -679,6 +679,202 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
 };
 
 
+// --- ONBOARDING QUESTIONNAIRE ---
+const ONBOARDING_QUESTIONS = [
+  {
+    id: 'duration',
+    question: 'How long have you been stuttering?',
+    questionCz: 'Jak dlouho koktáte?',
+    options: [
+      { value: 'new', label: 'Less than 1 year', labelCz: 'Méně než rok' },
+      { value: 'medium', label: '1-5 years', labelCz: '1-5 let' },
+      { value: 'long', label: 'More than 5 years', labelCz: 'Více než 5 let' }
+    ]
+  },
+  {
+    id: 'severity',
+    question: 'How would you rate your stuttering?',
+    questionCz: 'Jak byste ohodnotili své koktání?',
+    options: [
+      { value: 'mild', label: 'Mild - occasional', labelCz: 'Mírné - občasné' },
+      { value: 'moderate', label: 'Moderate - noticeable', labelCz: 'Střední - znatelné' },
+      { value: 'severe', label: 'Severe - frequent', labelCz: 'Těžké - časté' }
+    ]
+  },
+  {
+    id: 'triggers',
+    question: 'What triggers your stuttering most?',
+    questionCz: 'Co nejvíce spouští vaše koktání?',
+    options: [
+      { value: 'phone', label: '📞 Phone calls', labelCz: '📞 Telefonování' },
+      { value: 'presentation', label: '🎤 Presentations', labelCz: '🎤 Prezentace' },
+      { value: 'strangers', label: '👥 Talking to strangers', labelCz: '👥 Mluvení s cizími' },
+      { value: 'authority', label: '👔 Authority figures', labelCz: '👔 Autority (šéf, učitel)' }
+    ]
+  },
+  {
+    id: 'symptoms',
+    question: 'What do you experience most?',
+    questionCz: 'Co nejvíce prožíváte?',
+    options: [
+      { value: 'blocks', label: '🔇 Blocks (can\'t get words out)', labelCz: '🔇 Blokování (slova nejdou ven)' },
+      { value: 'repetitions', label: '🔁 Repetitions (t-t-talking)', labelCz: '🔁 Opakování (m-m-mluvení)' },
+      { value: 'prolongations', label: '➡️ Prolongations (sssss)', labelCz: '➡️ Prodlužování (sssss)' },
+      { value: 'anxiety', label: '😰 Anxiety about speaking', labelCz: '😰 Úzkost z mluvení' }
+    ]
+  },
+  {
+    id: 'goal',
+    question: 'What\'s your main goal?',
+    questionCz: 'Jaký je váš hlavní cíl?',
+    options: [
+      { value: 'confidence', label: '💪 Build speaking confidence', labelCz: '💪 Získat sebedůvěru' },
+      { value: 'fluency', label: '🗣️ Improve fluency', labelCz: '🗣️ Zlepšit plynulost' },
+      { value: 'work', label: '💼 Better at work/school', labelCz: '💼 Lepší v práci/škole' },
+      { value: 'social', label: '🎉 Social situations', labelCz: '🎉 Sociální situace' }
+    ]
+  },
+  {
+    id: 'time',
+    question: 'How much time can you practice daily?',
+    questionCz: 'Kolik času denně můžete cvičit?',
+    options: [
+      { value: '5', label: '⚡ 5 minutes', labelCz: '⚡ 5 minut' },
+      { value: '10', label: '🕐 10 minutes', labelCz: '🕐 10 minut' },
+      { value: '15', label: '🕒 15+ minutes', labelCz: '🕒 15+ minut' }
+    ]
+  },
+  {
+    id: 'preference',
+    question: 'What type of practice do you prefer?',
+    questionCz: 'Jaký typ cvičení preferujete?',
+    options: [
+      { value: 'reading', label: '📖 Reading aloud', labelCz: '📖 Čtení nahlas' },
+      { value: 'roleplay', label: '🎭 Role-play scenarios', labelCz: '🎭 Hraní situací' },
+      { value: 'relaxation', label: '🧘 Relaxation & breathing', labelCz: '🧘 Relaxace a dýchání' },
+      { value: 'mix', label: '🎯 Mix of all', labelCz: '🎯 Mix všeho' }
+    ]
+  },
+  {
+    id: 'pressure',
+    question: 'Where do you feel most pressure?',
+    questionCz: 'Kde cítíte největší tlak?',
+    options: [
+      { value: 'work', label: '💼 Work/meetings', labelCz: '💼 Práce/schůzky' },
+      { value: 'school', label: '🎓 School/classes', labelCz: '🎓 Škola/hodiny' },
+      { value: 'social', label: '🎉 Parties/events', labelCz: '🎉 Večírky/akce' },
+      { value: 'daily', label: '🛒 Daily errands', labelCz: '🛒 Běžné pochůzky' }
+    ]
+  }
+];
+
+const OnboardingScreen = ({ t, language, onComplete }) => {
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const progress = (currentQuestion / ONBOARDING_QUESTIONS.length) * 100;
+
+  const handleAnswer = async (questionId, value) => {
+    const newAnswers = { ...answers, [questionId]: value };
+    setAnswers(newAnswers);
+
+    if (currentQuestion < ONBOARDING_QUESTIONS.length - 1) {
+      setTimeout(() => setCurrentQuestion(currentQuestion + 1), 300);
+    } else {
+      // Save answers and complete
+      await AsyncStorage.setItem('onboarding_answers', JSON.stringify(newAnswers));
+      await AsyncStorage.setItem('onboarding_complete', 'true');
+      onComplete(newAnswers);
+    }
+  };
+
+  const question = ONBOARDING_QUESTIONS[currentQuestion];
+  const isCz = language === 'cz';
+
+  return (
+    <View style={{ flex: 1, backgroundColor: COLORS.BG_DARK, padding: 20 }}>
+      {/* Progress Bar */}
+      <View style={{ marginTop: 20, marginBottom: 30 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>
+            {isCz ? 'Otázka' : 'Question'} {currentQuestion + 1}/{ONBOARDING_QUESTIONS.length}
+          </Text>
+          <Text style={{ color: COLORS.ACCENT_LIME, fontSize: 12 }}>{Math.round(progress)}%</Text>
+        </View>
+        <View style={{ height: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 3 }}>
+          <View style={{
+            height: 6,
+            backgroundColor: COLORS.ACCENT_LIME,
+            borderRadius: 3,
+            width: `${progress}%`
+          }} />
+        </View>
+      </View>
+
+      {/* Question */}
+      <Text style={{
+        color: COLORS.TEXT_WHITE,
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 30,
+        lineHeight: 32
+      }}>
+        {isCz ? question.questionCz : question.question}
+      </Text>
+
+      {/* Options */}
+      <View style={{ gap: 12 }}>
+        {question.options.map((option) => (
+          <TouchableOpacity
+            key={option.value}
+            style={{
+              backgroundColor: answers[question.id] === option.value
+                ? COLORS.ACCENT_LIME
+                : 'rgba(255,255,255,0.05)',
+              padding: 18,
+              borderRadius: 12,
+              borderWidth: 2,
+              borderColor: answers[question.id] === option.value
+                ? COLORS.ACCENT_LIME
+                : 'rgba(255,255,255,0.1)'
+            }}
+            onPress={() => handleAnswer(question.id, option.value)}
+          >
+            <Text style={{
+              color: answers[question.id] === option.value ? COLORS.BG_DARK : COLORS.TEXT_WHITE,
+              fontSize: 16,
+              fontWeight: answers[question.id] === option.value ? 'bold' : 'normal'
+            }}>
+              {isCz ? option.labelCz : option.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Back Button */}
+      {currentQuestion > 0 && (
+        <TouchableOpacity
+          style={{ marginTop: 30, alignSelf: 'center' }}
+          onPress={() => setCurrentQuestion(currentQuestion - 1)}
+        >
+          <Text style={{ color: COLORS.TEXT_SEC }}>← {isCz ? 'Předchozí' : 'Previous'}</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Skip Onboarding */}
+      <TouchableOpacity
+        style={{ marginTop: 20, alignSelf: 'center' }}
+        onPress={async () => {
+          await AsyncStorage.setItem('onboarding_complete', 'true');
+          onComplete({});
+        }}
+      >
+        <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>
+          {isCz ? 'Přeskočit' : 'Skip for now'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 
 const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }) => {
@@ -1758,11 +1954,13 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
-  const [currentScreen, setCurrentScreen] = useState('landing'); // landing | checkout | app
+  const [currentScreen, setCurrentScreen] = useState('landing'); // landing | checkout | app | onboarding
   const [language, setLanguage] = useState('en');
   const [apiKey, setApiKey] = useState('');
   const [isReady, setIsReady] = useState(false);
   const [streak, setStreak] = useState(0); // Gamification
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [userProfile, setUserProfile] = useState(null); // Onboarding answers
 
   useEffect(() => {
     // Load Persisted Data
@@ -1803,9 +2001,21 @@ export default function App() {
         }
       }
 
+      // Load onboarding data
+      const onboardingComplete = await AsyncStorage.getItem('onboarding_complete');
+      const savedProfile = await AsyncStorage.getItem('onboarding_answers');
+      if (savedProfile) {
+        setUserProfile(JSON.parse(savedProfile));
+      }
+
       // Auto-Login if Premium
       if (isPremium === 'true') {
-        setCurrentScreen('app');
+        // Check if onboarding is needed
+        if (onboardingComplete !== 'true') {
+          setCurrentScreen('onboarding');
+        } else {
+          setCurrentScreen('app');
+        }
       }
 
       setIsReady(true);
@@ -1820,6 +2030,12 @@ export default function App() {
   const finishCheckout = async () => {
     await AsyncStorage.setItem('is_premium', 'true');
     await AsyncStorage.setItem('has_seen_landing', 'true');
+    // Go to onboarding for new users
+    setCurrentScreen('onboarding');
+  };
+
+  const handleOnboardingComplete = (answers) => {
+    setUserProfile(answers);
     setCurrentScreen('app');
   };
 
@@ -1927,8 +2143,21 @@ export default function App() {
     );
   }
 
+  if (currentScreen === 'onboarding') {
+    return (
+      <MobileContainer fullWidth={true}>
+        <StatusBar style="light" />
+        <SafeAreaView style={styles.safeArea}>
+          <OnboardingScreen t={t} language={language} onComplete={handleOnboardingComplete} />
+        </SafeAreaView>
+      </MobileContainer>
+    );
+  }
+
   const handleReset = async () => {
     await AsyncStorage.removeItem('is_premium');
+    await AsyncStorage.removeItem('onboarding_complete');
+    await AsyncStorage.removeItem('onboarding_answers');
     setCurrentScreen('landing');
   };
 
