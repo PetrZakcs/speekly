@@ -917,11 +917,23 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
             alignItems: 'center'
           }}
           onPress={() => {
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const instructions = isIOS
-              ? `📱 Install Speekly on iPhone:\n\n1️⃣ Tap the Share button ⬆️ at the bottom of Safari\n\n2️⃣ Scroll down in the menu\n\n3️⃣ Tap "Add to Home Screen"\n\n4️⃣ Tap "Add" in the top right\n\n✨ Done! Speekly will appear on your home screen.`
-              : `📱 Install Speekly on Android:\n\n1️⃣ Tap the menu ⋮ (three dots) in the top right\n\n2️⃣ Tap "Install app" or "Add to Home screen"\n\n3️⃣ Confirm the installation\n\n✨ Done! Speekly will appear on your home screen.`;
-            Alert.alert("📲 Install Speekly", instructions);
+            const isIOS = Platform.OS === 'web' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = Platform.OS === 'web' && /Android/.test(navigator.userAgent);
+
+            let instructions;
+            if (isIOS) {
+              instructions = "📱 Install Speekly on iPhone:\n\n1️⃣ Tap the Share button ⬆️ at the bottom of Safari\n\n2️⃣ Scroll down in the menu\n\n3️⃣ Tap 'Add to Home Screen'\n\n4️⃣ Tap 'Add' in the top right\n\n✨ Done! Speekly will appear on your home screen.";
+            } else if (isAndroid) {
+              instructions = "📱 Install Speekly on Android:\n\n1️⃣ Tap the menu ⋮ (three dots) in Chrome\n\n2️⃣ Tap 'Install app' or 'Add to Home screen'\n\n3️⃣ Confirm the installation\n\n✨ Done!";
+            } else {
+              instructions = "📱 Install Speekly:\n\niPhone: Safari → Share → Add to Home Screen\n\nAndroid: Chrome → Menu → Install App";
+            }
+
+            if (Platform.OS === 'web') {
+              window.alert(instructions);
+            } else {
+              Alert.alert("📲 Install Speekly", instructions);
+            }
           }}
         >
           <Text style={{ fontSize: 32, marginRight: 12 }}>📲</Text>
