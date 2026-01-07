@@ -291,7 +291,6 @@ const LandingScreen = ({ t, onGetStarted }) => {
             </View>
           </View>
         </View>
-
         {/* 3. Process Section */}
         <View style={styles.processSection}>
           <Text style={styles.sectionHeader}>How It Works</Text>
@@ -497,6 +496,15 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
         if (authError && !authError.message.includes('already registered')) {
           throw new Error(authError.message);
         }
+      }
+
+      // ADMIN BYPASS - Owner gets free premium access
+      const ADMIN_EMAILS = ['petrzak.ig@seznam.cz'];
+      if (ADMIN_EMAILS.includes(email.toLowerCase())) {
+        await AsyncStorage.setItem('is_premium', 'true');
+        Alert.alert('👑 Admin Access', 'Welcome! You have full premium access.');
+        onComplete();
+        return;
       }
 
       // 2. Call our Stripe checkout API
