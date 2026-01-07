@@ -1,41 +1,35 @@
 {
-    "builds": [
-        {
-            "src": "api/*.js",
-            "use": "@vercel/node"
-        },
-        {
-            "src": "package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "dist"
-            }
+    "buildCommand": "npx expo export -p web --output-dir dist && node scripts/deploy-pwa.js",
+    "outputDirectory": "dist",
+    "functions": {
+        "api/*.js": {
+            "runtime": "@vercel/node@3"
         }
-    ],
-    "routes": [
+    },
+    "rewrites": [
         {
-            "src": "/api/(.*)",
-            "dest": "/api/$1"
+            "source": "/api/(.*)",
+            "destination": "/api/$1"
         },
         {
-            "src": "/_expo/(.*)",
-            "dest": "/_expo/$1"
+            "source": "/_expo/(.*)",
+            "destination": "/_expo/$1"
         },
         {
-            "src": "/favicon.ico",
-            "dest": "/favicon.ico"
+            "source": "/favicon.ico",
+            "destination": "/favicon.ico"
         },
         {
-            "src": "/manifest.json",
-            "dest": "/manifest.json"
+            "source": "/manifest.json",
+            "destination": "/manifest.json"
         },
         {
-            "src": "/icon.png",
-            "dest": "/icon.png"
+            "source": "/icon.png",
+            "destination": "/icon.png"
         },
         {
-            "src": "/(.*)",
-            "dest": "/index.html"
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ]
 }
