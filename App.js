@@ -2029,9 +2029,12 @@ const SosScreen = ({ t, onExit }) => {
   };
 
   useEffect(() => {
-    // Timer
+    // Timer with granular haptic feedback
     const timer = setInterval(() => {
       setTimeLeft(t => {
+        // Light tick every second to ground the user
+        if (t > 0 && Platform.OS !== 'web') Vibration.vibrate(20);
+
         if (t <= 1) {
           clearInterval(timer);
           return 0;
@@ -2044,10 +2047,12 @@ const SosScreen = ({ t, onExit }) => {
     let step = 0;
     const breather = setInterval(() => {
       step = (step + 1) % 3;
-      if (step === 0) {
-        setPhase("Inhale");
-        if (Platform.OS !== 'web') Vibration.vibrate(100); // Haptic start
-      }
+
+      // Stronger vibration on phase change to signal "Switch now"
+      // User can do this with eyes closed
+      if (Platform.OS !== 'web') Vibration.vibrate(70);
+
+      if (step === 0) setPhase("Inhale");
       if (step === 1) setPhase("Hold");
       if (step === 2) setPhase("Exhale");
     }, 4000);
