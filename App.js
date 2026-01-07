@@ -1743,7 +1743,15 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete, userProfil
               <Text style={{ color: COLORS.TEXT_SEC, textAlign: 'center', marginTop: 50, fontStyle: 'italic' }}>
                 {selectedScenario.id === 'custom'
                   ? t('custom_desc')
-                  : t('start_breath')}
+                  : (
+                    <View style={{ alignItems: 'center', opacity: 0.8 }}>
+                      <Text style={{ color: COLORS.ACCENT_LIME, fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>🎮 Roleplay Simulation</Text>
+                      <Text style={{ color: COLORS.TEXT_WHITE, marginBottom: 5 }}>1. AI plays the role of: <Text style={{ fontWeight: 'bold' }}>{selectedScenario.title}</Text></Text>
+                      <Text style={{ color: COLORS.TEXT_WHITE, marginBottom: 5 }}>2. Tap 🎤 and speak naturally.</Text>
+                      <Text style={{ color: COLORS.TEXT_WHITE, marginBottom: 20 }}>3. Tap 💡 for therapist advice.</Text>
+                      <Text style={{ color: COLORS.TEXT_SEC, fontStyle: 'italic' }}>{t('start_breath')}</Text>
+                    </View>
+                  )}
               </Text>
             )}
             {chatHistory.map((msg, i) => (
@@ -2029,19 +2037,33 @@ const SosScreen = ({ t, onExit }) => {
   ];
 
   const speakText = (text) => {
-    if (Platform.OS === 'web' && window.speechSynthesis) {
+    // Try Web Speech API first (works on PWA/Mobile Web)
+    if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
+      // Force English for these phrases or detect lang
+      u.lang = 'en-US';
       window.speechSynthesis.speak(u);
+    } else {
+      Alert.alert("Notice", "Text-to-speech not supported in this browser.");
     }
   };
 
   useEffect(() => {
+    // Helper for vibration across platforms
+    const vibe = (ms) => {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(ms);
+      } else {
+        Vibration.vibrate(ms);
+      }
+    };
+
     // Timer with granular haptic feedback
     const timer = setInterval(() => {
       setTimeLeft(t => {
-        // Light tick every second to ground the user
-        if (t > 0 && Platform.OS !== 'web') Vibration.vibrate(20);
+        // Light tick every second
+        if (t > 0) vibe(20);
 
         if (t <= 1) {
           clearInterval(timer);
@@ -2051,14 +2073,13 @@ const SosScreen = ({ t, onExit }) => {
       });
     }, 1000);
 
-    // Breathing Phase Loop (12s cycle: 4 In, 4 Hold, 4 Out)
+    // Breathing Phase Loop
     let step = 0;
     const breather = setInterval(() => {
       step = (step + 1) % 3;
 
-      // Stronger vibration on phase change to signal "Switch now"
-      // User can do this with eyes closed
-      if (Platform.OS !== 'web') Vibration.vibrate(70);
+      // Stronger vibration on phase change
+      vibe(70);
 
       if (step === 0) setPhase("Inhale");
       if (step === 1) setPhase("Hold");
