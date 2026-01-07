@@ -1556,6 +1556,42 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete, userProfil
     setIsProcessing(false);
   };
 
+
+  const analyzeFeedback = async () => {
+    setIsProcessing(true);
+    const { url, key } = getApiConfig();
+    const symptoms = userProfile?.symptoms ? `User reports: ${userProfile.symptoms}` : '';
+    const wpmInfo = wpm > 0 ? `Detected WPM: ${wpm}.` : '';
+
+    // System prompt for therapist
+    const sysMsg = {
+      role: "system",
+      content: `You are a speech therapist analyzing a roleplay session. ${symptoms} ${wpmInfo}
+      Focus on fluency, confidence, and pacing. 
+      Provide 3 short, encouraging bullet points with advice.
+      Language: ${language === 'cz' ? 'Czech' : 'English'}.`
+    };
+
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (key) headers['Authorization'] = `Bearer ${key}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [sysMsg, ...chatHistory.slice(-10)]
+        })
+      });
+      const data = await response.json();
+      if (data.choices) {
+        setAiFeedback(data.choices[0].message.content);
+      }
+    } catch (e) { console.error(e); }
+    setIsProcessing(false);
+  };
+
   // Switch Mode & Clear
   const switchMode = (m) => {
     setMode(m);
@@ -1681,8 +1717,26 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete, userProfil
           <Text style={styles.micIcon}>{recording ? '⬛' : '🎤'}</Text>
         </TouchableOpacity>
 
-        {/* Empty space for balance when playback visible */}
-        {audioUrl && !recording && <View style={{ width: 70 }} />}
+        {/* Feedback Button (right side) - Chat Mode Only */}
+        {mode === 'chat' && chatHistory.length > 0 && !recording && (
+          <TouchableOpacity
+            style={{
+              width: 50,
+              height: 50,
+              borderRadius: 25,
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginLeft: 20,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.3)'
+            }}
+            onPress={analyzeFeedback}
+            disabled={isProcessing}
+          >
+            <Text style={{ fontSize: 24 }}>💡</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Recording Status */}
@@ -1690,8 +1744,8 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete, userProfil
         {recording ? 'Listening...' : audioUrl ? 'Tap ▶️ to replay' : t('press_record')}
       </Text>
 
-      {/* Legacy Feedback Area (only for Read mode) */}
-      {mode === 'read' && (transcript || aiFeedback) && (
+      {/* Feedback Area (Read & Chat) */}
+      {(transcript || aiFeedback) && (
         <View style={styles.feedbackArea}>
           <Text style={styles.userText}>"{transcript}"</Text>
           {wpm > 0 && <Text style={{ color: COLORS.ACCENT_LIME, fontSize: 12, marginTop: 5, fontStyle: 'italic' }}>Speed: ~{wpm} WPM</Text>}
