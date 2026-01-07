@@ -1378,7 +1378,7 @@ const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset, 
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text style={{ color: COLORS.TEXT_SEC }}>Support</Text>
-          <Text style={{ color: COLORS.ACCENT_LIME }}>help@speekly.app</Text>
+          <Text style={{ color: COLORS.ACCENT_LIME }}>speeklymng@gmail.com</Text>
         </View>
       </View>
 
@@ -1398,7 +1398,7 @@ const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset, 
           {t('disclaimer')}
         </Text>
         <Text style={{ color: COLORS.TEXT_SEC, fontSize: 10, textAlign: 'center', marginTop: 10, opacity: 0.5 }}>
-          © 2024 Speekly. Made with ❤️ for people who stutter.
+          © 2025 Speekly. Made with ❤️ for people who stutter.
         </Text>
       </View>
     </ScrollView>
