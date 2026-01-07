@@ -1395,7 +1395,15 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete, userProfil
 
   // Get personalized scenarios
   const scenarios = useMemo(() => getRecommendedScenarios(userProfile), [userProfile]);
-  const [selectedScenario, setSelectedScenario] = useState(scenarios[0]);
+  // Robust selection logic to prevent crashes
+  const [activeScenarioId, setActiveScenarioId] = useState(null);
+  const selectedScenario = useMemo(() => {
+    const found = activeScenarioId ? scenarios.find(s => s.id === activeScenarioId) : null;
+    // Fallback chain: Selected -> First Recommended -> First Default
+    return found || scenarios[0] || CONVERSATION_SCENARIOS[0];
+  }, [scenarios, activeScenarioId]);
+
+  const setSelectedScenario = (sc) => setActiveScenarioId(sc.id);
 
   // Read Mode State
   const [textIndex, setTextIndex] = useState(0);
