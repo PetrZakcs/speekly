@@ -1375,27 +1375,7 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
         </ScrollView>
       </View>
 
-      {/* SOS Panic Button - Featured */}
-      <TouchableOpacity
-        style={{
-          backgroundColor: 'rgba(249,115,22,0.15)',
-          borderColor: COLORS.ACCENT_ORANGE,
-          borderWidth: 1,
-          padding: 20,
-          borderRadius: 16,
-          flexDirection: 'row',
-          alignItems: 'center',
-          marginBottom: 16
-        }}
-        onPress={onStartSos}
-      >
-        <Text style={{ fontSize: 32, marginRight: 15 }}>🚨</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: COLORS.ACCENT_ORANGE, fontSize: 18, fontWeight: 'bold' }}>SOS Panic Button</Text>
-          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 13 }}>Instant calm in 60 seconds</Text>
-        </View>
-        <Text style={{ color: COLORS.ACCENT_ORANGE, fontSize: 24 }}>→</Text>
-      </TouchableOpacity>
+
 
       {/* Quick Actions */}
       <Text style={styles.sectionLabel}>Quick Start</Text>
