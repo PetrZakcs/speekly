@@ -463,6 +463,16 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
     setIsProcessing(true);
     setError('');
 
+    // ADMIN BYPASS - Owner gets instant access without auth
+    const ADMIN_EMAILS = ['petrzak.ig@seznam.cz'];
+    if (ADMIN_EMAILS.includes(email.toLowerCase())) {
+      await AsyncStorage.setItem('is_premium', 'true');
+      Alert.alert('👑 Welcome!', 'You have full premium access.');
+      setIsProcessing(false);
+      onComplete();
+      return;
+    }
+
     try {
       if (isLoginMode) {
         // LOGIN MODE - For existing users
@@ -496,15 +506,6 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
         if (authError && !authError.message.includes('already registered')) {
           throw new Error(authError.message);
         }
-      }
-
-      // ADMIN BYPASS - Owner gets free premium access
-      const ADMIN_EMAILS = ['petrzak.ig@seznam.cz'];
-      if (ADMIN_EMAILS.includes(email.toLowerCase())) {
-        await AsyncStorage.setItem('is_premium', 'true');
-        Alert.alert('👑 Admin Access', 'Welcome! You have full premium access.');
-        onComplete();
-        return;
       }
 
       // 2. Call our Stripe checkout API
