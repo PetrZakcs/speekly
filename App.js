@@ -179,7 +179,7 @@ const TIPS_DATA = [
 
 const RELAX_TECHNIQUES = [
   {
-    id: 1, title: 'Deep Diaphragm', time: 5, timeStr: '5 minutes', type: 'deep',
+    id: 1, title: 'Deep Diaphragm', time: 2, timeStr: '2 minutes', type: 'deep',
     instructions: [
       "Place one hand on your chest, one on your belly.",
       "Breathe in deeply through your nose.",
@@ -188,7 +188,7 @@ const RELAX_TECHNIQUES = [
     ]
   },
   {
-    id: 2, title: 'Muscle Release (PMR)', time: 10, timeStr: '10 minutes', type: 'body',
+    id: 2, title: 'Muscle Release (PMR)', time: 5, timeStr: '5 minutes', type: 'body',
     instructions: [
       "Tense your toes for 5 seconds.",
       "Release and feel the tension leave.",
@@ -206,7 +206,7 @@ const RELAX_TECHNIQUES = [
     ]
   },
   {
-    id: 4, title: 'Confidence Visualization', time: 5, timeStr: '5 minutes', type: 'mental',
+    id: 4, title: 'Confidence Visualization', time: 3, timeStr: '3 minutes', type: 'mental',
     instructions: [
       "Close your eyes. Picture the room/stage.",
       "See yourself smiling and standing tall.",
@@ -1952,6 +1952,38 @@ const RelaxationScreen = ({ t, onComplete }) => {
   const [newTitle, setNewTitle] = useState('');
   const [newTime, setNewTime] = useState('');
 
+  // Load custom techniques on mount
+  useEffect(() => {
+    const loadCustom = async () => {
+      try {
+        const saved = await AsyncStorage.getItem('custom_techniques');
+        if (saved) setCustomList(JSON.parse(saved));
+      } catch (e) { console.error(e); }
+    };
+    loadCustom();
+  }, []);
+
+  const deleteCustom = (id) => {
+    const isCustom = customList.find(c => c.id === id);
+    if (!isCustom) return; // Cannot delete built-in techniques
+
+    const performDelete = () => {
+      const newList = customList.filter(c => c.id !== id);
+      setCustomList(newList);
+      AsyncStorage.setItem('custom_techniques', JSON.stringify(newList));
+      if (selectedId === id) setSelectedId(1);
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Delete this custom technique?')) performDelete();
+    } else {
+      Alert.alert('Delete Technique', 'Remove this custom exercise?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: performDelete }
+      ]);
+    }
+  };
+
   // Combined List
   const allTechniques = [...RELAX_TECHNIQUES, ...customList];
 
@@ -1980,7 +2012,7 @@ const RelaxationScreen = ({ t, onComplete }) => {
     setIsActive(false);
   };
 
-  const addCustomTechnique = () => {
+  const addCustomTechnique = async () => {
     if (!newTitle || !newTime) return;
     const newTech = {
       id: Date.now(), // simple unique id
@@ -1989,7 +2021,9 @@ const RelaxationScreen = ({ t, onComplete }) => {
       timeStr: `${newTime} minutes`,
       type: 'custom'
     };
-    setCustomList([...customList, newTech]);
+    const updatedList = [...customList, newTech];
+    setCustomList(updatedList);
+    await AsyncStorage.setItem('custom_techniques', JSON.stringify(updatedList));
     setShowAddModal(false);
     setNewTitle('');
     setNewTime('');
@@ -2010,6 +2044,8 @@ const RelaxationScreen = ({ t, onComplete }) => {
             key={tech.id}
             style={[styles.techCard, selectedId === tech.id && styles.techCardActive]}
             onPress={() => selectTech(tech)}
+            onLongPress={() => deleteCustom(tech.id)}
+            delayLongPress={500}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text style={{ fontSize: 20, marginRight: 10 }}>
