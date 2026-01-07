@@ -1,35 +1,57 @@
 {
-    "buildCommand": "npx expo export -p web --output-dir dist && node scripts/deploy-pwa.js",
-    "outputDirectory": "dist",
-    "functions": {
-        "api/*.js": {
-            "runtime": "@vercel/node@3"
+    "builds": [
+        {
+            "src": "api/**/*.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "package.json",
+            "use": "@vercel/static-build",
+            "config": {
+                "distDir": "dist"
+            }
         }
-    },
-    "rewrites": [
+    ],
+    "routes": [
         {
-            "source": "/api/(.*)",
-            "destination": "/api/$1"
+            "src": "/api/checkout",
+            "dest": "/api/checkout.js"
         },
         {
-            "source": "/_expo/(.*)",
-            "destination": "/_expo/$1"
+            "src": "/api/webhook",
+            "dest": "/api/webhook.js"
         },
         {
-            "source": "/favicon.ico",
-            "destination": "/favicon.ico"
+            "src": "/api/health",
+            "dest": "/api/health.js"
         },
         {
-            "source": "/manifest.json",
-            "destination": "/manifest.json"
+            "src": "/api/chat",
+            "dest": "/api/chat.js"
         },
         {
-            "source": "/icon.png",
-            "destination": "/icon.png"
+            "src": "/api/diagnose",
+            "dest": "/api/diagnose.js"
         },
         {
-            "source": "/(.*)",
-            "destination": "/index.html"
+            "src": "/_expo/(.*)",
+            "dest": "/dist/_expo/$1"
+        },
+        {
+            "src": "/favicon.ico",
+            "dest": "/dist/favicon.ico"
+        },
+        {
+            "src": "/manifest.json",
+            "dest": "/dist/manifest.json"
+        },
+        {
+            "src": "/icon.png",
+            "dest": "/dist/icon.png"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/dist/index.html"
         }
     ]
 }
