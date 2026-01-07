@@ -664,65 +664,250 @@ const CheckoutScreen = ({ t, onComplete, onBack }) => {
 };
 
 
-const HomeScreen = ({ t, onStartRelax, onStartSos, streak = 0 }) => {
+
+
+const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }) => {
   const [showInstall, setShowInstall] = useState(Platform.OS === 'web');
+  const [stats, setStats] = useState({
+    totalSessions: 0,
+    totalMinutes: 0,
+    weeklyActivity: [false, false, false, false, false, false, false], // Mon-Sun
+    averageWpm: 0,
+    lastPractice: null
+  });
+  const [greeting, setGreeting] = useState('Hello');
+
+  useEffect(() => {
+    loadStats();
+    setGreeting(getGreeting());
+  }, []);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t('hello').includes('Ahoj') ? 'Dobré ráno' : 'Good morning';
+    if (hour < 18) return t('hello').includes('Ahoj') ? 'Dobré odpoledne' : 'Good afternoon';
+    return t('hello').includes('Ahoj') ? 'Dobrý večer' : 'Good evening';
+  };
+
+  const loadStats = async () => {
+    try {
+      const sessions = await AsyncStorage.getItem('total_sessions');
+      const minutes = await AsyncStorage.getItem('total_minutes');
+      const wpm = await AsyncStorage.getItem('average_wpm');
+      const lastDate = await AsyncStorage.getItem('last_practice_date');
+      const weekData = await AsyncStorage.getItem('weekly_activity');
+
+      setStats({
+        totalSessions: parseInt(sessions) || 0,
+        totalMinutes: parseInt(minutes) || 0,
+        averageWpm: parseInt(wpm) || 0,
+        lastPractice: lastDate,
+        weeklyActivity: weekData ? JSON.parse(weekData) : [false, false, false, false, false, false, false]
+      });
+    } catch (e) {
+      console.log('Error loading stats:', e);
+    }
+  };
+
+  const getMotivationalMessage = () => {
+    if (streak === 0) return "Start your journey today! 🌱";
+    if (streak < 3) return "Great start! Keep building momentum 💪";
+    if (streak < 7) return "You're on fire! Almost a full week 🔥";
+    if (streak < 14) return "Amazing consistency! You're making real progress 🌟";
+    if (streak < 30) return "Incredible dedication! You're transforming 🚀";
+    return "You're a speaking champion! 👑";
+  };
+
+  const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const today = new Date().getDay();
+  const adjustedToday = today === 0 ? 6 : today - 1; // Convert Sunday=0 to index 6
 
   return (
-    <ScrollView style={styles.screenScroll}>
+    <ScrollView style={styles.screenScroll} showsVerticalScrollIndicator={false}>
+      {/* Header with Greeting */}
       <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>{t('hello')} User! 👋</Text>
-        <Text style={styles.headerSubtitle}>{t('how_feel')}</Text>
-        {/* Streak Badge Header */}
-        {streak > 0 && (
-          <View style={{ position: 'absolute', right: 0, top: 0, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 }}>
-            <Text style={{ fontSize: 16 }}>🔥 {streak}</Text>
-          </View>
-        )}
+        <Text style={styles.headerTitle}>{greeting}! 👋</Text>
+        <Text style={styles.headerSubtitle}>{getMotivationalMessage()}</Text>
       </View>
 
-      {/* SOS Button */}
+      {/* Streak & Quick Stats Row */}
+      <View style={{
+        flexDirection: 'row',
+        marginBottom: 20,
+        gap: 12
+      }}>
+        {/* Streak Card */}
+        <View style={{
+          flex: 1,
+          backgroundColor: streak > 0 ? 'rgba(249,115,22,0.15)' : 'rgba(255,255,255,0.05)',
+          borderRadius: 16,
+          padding: 16,
+          borderWidth: streak > 0 ? 1 : 0,
+          borderColor: COLORS.ACCENT_ORANGE
+        }}>
+          <Text style={{ fontSize: 32, textAlign: 'center' }}>{streak > 0 ? '🔥' : '💤'}</Text>
+          <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 28, fontWeight: 'bold', textAlign: 'center' }}>{streak}</Text>
+          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12, textAlign: 'center' }}>Day Streak</Text>
+        </View>
+
+        {/* Total Sessions */}
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(212,238,159,0.1)',
+          borderRadius: 16,
+          padding: 16
+        }}>
+          <Text style={{ fontSize: 32, textAlign: 'center' }}>🎯</Text>
+          <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 28, fontWeight: 'bold', textAlign: 'center' }}>{stats.totalSessions}</Text>
+          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12, textAlign: 'center' }}>Sessions</Text>
+        </View>
+
+        {/* Total Time */}
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(255,255,255,0.05)',
+          borderRadius: 16,
+          padding: 16
+        }}>
+          <Text style={{ fontSize: 32, textAlign: 'center' }}>⏱️</Text>
+          <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 28, fontWeight: 'bold', textAlign: 'center' }}>{stats.totalMinutes}</Text>
+          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12, textAlign: 'center' }}>Minutes</Text>
+        </View>
+      </View>
+
+      {/* Weekly Activity Calendar */}
+      <View style={{
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)'
+      }}>
+        <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12, marginBottom: 12, fontWeight: '600' }}>THIS WEEK</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          {weekDays.map((day, index) => (
+            <View key={index} style={{ alignItems: 'center' }}>
+              <Text style={{ color: COLORS.TEXT_SEC, fontSize: 11, marginBottom: 6 }}>{day}</Text>
+              <View style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: stats.weeklyActivity[index]
+                  ? COLORS.ACCENT_LIME
+                  : index === adjustedToday
+                    ? 'rgba(212,238,159,0.3)'
+                    : 'rgba(255,255,255,0.1)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: index === adjustedToday ? 2 : 0,
+                borderColor: COLORS.ACCENT_LIME
+              }}>
+                {stats.weeklyActivity[index] && (
+                  <Text style={{ color: COLORS.BG_DARK, fontSize: 16 }}>✓</Text>
+                )}
+              </View>
+            </View>
+          ))}
+        </View>
+        <Text style={{ color: COLORS.TEXT_SEC, fontSize: 11, textAlign: 'center', marginTop: 12 }}>
+          {stats.weeklyActivity.filter(Boolean).length}/7 days completed
+        </Text>
+      </View>
+
+      {/* SOS Panic Button - Featured */}
       <TouchableOpacity
-        style={{ backgroundColor: 'rgba(249,115,22,0.15)', borderColor: COLORS.ACCENT_ORANGE, borderWidth: 1, padding: 20, borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}
+        style={{
+          backgroundColor: 'rgba(249,115,22,0.15)',
+          borderColor: COLORS.ACCENT_ORANGE,
+          borderWidth: 1,
+          padding: 20,
+          borderRadius: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 16
+        }}
         onPress={onStartSos}
       >
         <Text style={{ fontSize: 32, marginRight: 15 }}>🚨</Text>
         <View style={{ flex: 1 }}>
           <Text style={{ color: COLORS.ACCENT_ORANGE, fontSize: 18, fontWeight: 'bold' }}>SOS Panic Button</Text>
-          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 13 }}>Presentation in 5 mins? click here.</Text>
+          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 13 }}>Instant calm in 60 seconds</Text>
         </View>
         <Text style={{ color: COLORS.ACCENT_ORANGE, fontSize: 24 }}>→</Text>
       </TouchableOpacity>
 
+      {/* Quick Actions */}
+      <Text style={styles.sectionLabel}>Quick Start</Text>
+      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            backgroundColor: COLORS.ACCENT_LIME,
+            borderRadius: 16,
+            padding: 20,
+            alignItems: 'center'
+          }}
+          onPress={onStartPractice}
+        >
+          <Text style={{ fontSize: 28, marginBottom: 8 }}>🎤</Text>
+          <Text style={{ color: COLORS.BG_DARK, fontWeight: 'bold', fontSize: 16 }}>Practice</Text>
+          <Text style={{ color: COLORS.BG_DARK, opacity: 0.7, fontSize: 11 }}>AI Speech Training</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(212,238,159,0.15)',
+            borderRadius: 16,
+            padding: 20,
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: COLORS.ACCENT_LIME
+          }}
+          onPress={onStartRelax}
+        >
+          <Text style={{ fontSize: 28, marginBottom: 8 }}>🧘</Text>
+          <Text style={{ color: COLORS.ACCENT_LIME, fontWeight: 'bold', fontSize: 16 }}>Relax</Text>
+          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 11 }}>Breathing Exercises</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Daily Tip */}
+      <View style={{
+        backgroundColor: 'rgba(212,238,159,0.08)',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 20,
+        borderLeftWidth: 4,
+        borderLeftColor: COLORS.ACCENT_LIME
+      }}>
+        <Text style={{ color: COLORS.ACCENT_LIME, fontWeight: 'bold', marginBottom: 6 }}>💡 Daily Tip</Text>
+        <Text style={{ color: COLORS.TEXT_WHITE, lineHeight: 20 }}>
+          {TIPS_DATA[new Date().getDay() % TIPS_DATA.length]}
+        </Text>
+      </View>
+
+      {/* Install Banner */}
       {showInstall && (
         <View style={styles.installBanner}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.installTitle}>Install Speekly App</Text>
-            <Text style={styles.installDesc}>Add to Home Screen for the best experience.</Text>
+            <Text style={styles.installTitle}>📱 Install Speekly</Text>
+            <Text style={styles.installDesc}>Add to Home Screen for quick access</Text>
           </View>
-          <TouchableOpacity style={styles.smallButton} onPress={() => Alert.alert("Install Guide", "iOS: Tap Share -> Add to Home Screen\nAndroid: Tap Menu -> Install App")}>
-            <Text style={styles.smallButtonText}>Install +</Text>
+          <TouchableOpacity
+            style={styles.smallButton}
+            onPress={() => Alert.alert("Install Guide", "iOS: Tap Share → Add to Home Screen\nAndroid: Tap Menu → Install App")}
+          >
+            <Text style={styles.smallButtonText}>Install</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowInstall(false)} style={{ marginLeft: 8 }}>
+            <Text style={{ color: COLORS.TEXT_SEC, fontSize: 18 }}>✕</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      <Text style={styles.sectionLabel}>{t('recommendation')}</Text>
-      <View style={styles.recCard}>
-        <Text style={styles.recText}>{t('start_breath')}</Text>
-        <TouchableOpacity style={styles.limeButton} onPress={onStartRelax}>
-          <Text style={styles.limeButtonText}>{t('start_ex')}</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{streak} 🔥</Text>
-          <Text style={styles.statLabel}>{t('days_row')}</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>-</Text>
-          <Text style={styles.statLabel}>{t('ex_week')}</Text>
-        </View>
-      </View>
+      <View style={{ height: 30 }} />
     </ScrollView>
   );
 };
@@ -1509,18 +1694,47 @@ export default function App() {
   const saveLang = async (l) => { setLanguage(l); await AsyncStorage.setItem('language', l); };
   const saveKey = async (k) => { setApiKey(k); await AsyncStorage.setItem('openai_key', k); };
 
-  const markPracticeComplete = async () => {
+  const markPracticeComplete = async (durationMinutes = 5) => {
     const today = new Date().toISOString().split('T')[0];
     const lastDate = await AsyncStorage.getItem('last_practice_date');
+    const dayOfWeek = new Date().getDay();
+    const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Mon=0, Sun=6
 
-    if (lastDate === today) return; // Already practiced today
+    // Update total sessions
+    const sessions = parseInt(await AsyncStorage.getItem('total_sessions')) || 0;
+    await AsyncStorage.setItem('total_sessions', (sessions + 1).toString());
+
+    // Update total minutes
+    const minutes = parseInt(await AsyncStorage.getItem('total_minutes')) || 0;
+    await AsyncStorage.setItem('total_minutes', (minutes + durationMinutes).toString());
+
+    // Update weekly activity
+    let weeklyActivity = [false, false, false, false, false, false, false];
+    try {
+      const stored = await AsyncStorage.getItem('weekly_activity');
+      if (stored) weeklyActivity = JSON.parse(stored);
+    } catch (e) { }
+
+    // Reset weekly if it's a new week (Monday)
+    const lastWeek = await AsyncStorage.getItem('week_start');
+    const currentWeekStart = getWeekStart();
+    if (lastWeek !== currentWeekStart) {
+      weeklyActivity = [false, false, false, false, false, false, false];
+      await AsyncStorage.setItem('week_start', currentWeekStart);
+    }
+
+    weeklyActivity[adjustedDay] = true;
+    await AsyncStorage.setItem('weekly_activity', JSON.stringify(weeklyActivity));
+
+    // Streak logic - only count once per day
+    if (lastDate === today) return;
 
     let newStreak = streak;
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
     if (lastDate === yesterday) {
       newStreak += 1;
-    } else {
+    } else if (lastDate !== today) {
       newStreak = 1; // Broken streak or first time
     }
 
@@ -1528,7 +1742,7 @@ export default function App() {
     await AsyncStorage.setItem('user_streak', newStreak.toString());
     await AsyncStorage.setItem('last_practice_date', today);
 
-    Alert.alert("🔥 Streak Updated!", `You're on a ${newStreak} day streak! Keep it up!`);
+    Alert.alert("🔥 Great Practice!", `${newStreak} day streak! Sessions: ${sessions + 1}`);
 
     // SYNC TO SUPABASE (Cloud Backup)
     try {
@@ -1537,14 +1751,21 @@ export default function App() {
         await supabase.from('profiles').upsert({
           id: user.id,
           streak: newStreak,
-          last_practice: today
+          last_practice_date: today,
+          total_sessions: sessions + 1
         });
       }
     } catch (e) {
       console.log('Online sync failed (offline?)', e);
     }
+  };
 
-    Alert.alert("🔥 Streak Updated!", `You're on a ${newStreak} day streak! Keep it up!`);
+  // Helper function to get week start date (Monday)
+  const getWeekStart = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(now.setDate(diff)).toISOString().split('T')[0];
   };
 
   const t = (k) => DICTIONARY[language][k] || k;
@@ -1586,7 +1807,7 @@ export default function App() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.contentContainer}>
           <View style={{ maxWidth: 1000, alignSelf: 'center', width: '100%', flex: 1 }}>
-            {activeTab === 'home' && <HomeScreen t={t} streak={streak} onStartRelax={() => setActiveTab('relax')} onStartSos={() => setActiveTab('sos')} />}
+            {activeTab === 'home' && <HomeScreen t={t} streak={streak} onStartRelax={() => setActiveTab('relax')} onStartSos={() => setActiveTab('sos')} onStartPractice={() => setActiveTab('practice')} />}
             {activeTab === 'relax' && <RelaxationScreen t={t} onComplete={markPracticeComplete} />}
             {activeTab === 'practice' && <PracticeScreen t={t} language={language} apiKey={apiKey} onComplete={markPracticeComplete} />}
             {activeTab === 'settings' && <SettingsScreen t={t} language={language} setLanguage={saveLang} apiKey={apiKey} setApiKey={saveKey} onReset={handleReset} onLogin={() => setActiveTab('auth')} user={user} />}
