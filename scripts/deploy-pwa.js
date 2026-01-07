@@ -51,19 +51,35 @@ if (fs.existsSync(PUBLIC_DIR)) {
     console.log('ℹ️ Public directory missing, skipping asset copy.');
 }
 
-// 2. Inject Link into HTML
+// 2. Inject PWA tags into HTML (including iOS-specific)
 const htmlPath = path.join(buildDir, 'index.html');
 if (fs.existsSync(htmlPath)) {
     try {
         let html = fs.readFileSync(htmlPath, 'utf-8');
 
-        if (!html.includes('manifest.json')) {
-            const linkTag = `<link rel="manifest" href="/${MANIFEST_FILE}" />`;
-            html = html.replace('</head>', `${linkTag}\n</head>`);
+        // iOS PWA meta tags
+        const iosTags = `
+    <!-- iOS PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Speekly">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="apple-touch-startup-image" href="/icon.png">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0F2822">
+    <meta name="msapplication-navbutton-color" content="#0F2822">
+`;
+
+        if (!html.includes('apple-mobile-web-app-capable')) {
+            html = html.replace('</head>', `${iosTags}</head>`);
             fs.writeFileSync(htmlPath, html);
-            console.log('✅ Injected manifest link into index.html');
+            console.log('✅ Injected iOS PWA meta tags into index.html');
         } else {
-            console.log('ℹ️ Manifest link already present.');
+            console.log('ℹ️ iOS PWA tags already present.');
         }
     } catch (e) {
         console.error('Error injecting HTML:', e);
