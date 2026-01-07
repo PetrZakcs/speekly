@@ -225,11 +225,190 @@ const PRACTICE_SENTENCES = [
 ];
 
 const CONVERSATION_SCENARIOS = [
-  { id: 'job', title: 'Job Interview', icon: '💼', prompt: "You are a professional HR manager interviewing the user for a job. Ask standard interview questions. Keep replies short." },
-  { id: 'coffee', title: 'Ordering Coffee', icon: '☕', prompt: "You are a busy barista at a coffee shop. Ask the user what they want to order. Be polite but quick." },
-  { id: 'social', title: 'Small Talk', icon: '👋', prompt: "You are a friendly neighbor meeting the user at the mailbox. Make casual small talk about the weather or weekend." },
-  { id: 'custom', title: 'Custom Topic', icon: '✨', prompt: "You are a helpful conversation partner. Discuss whatever topic the user brings up." }
+  { id: 'job', title: 'Job Interview', titleCz: 'Pohovor', icon: '💼', prompt: "You are a professional HR manager interviewing the user for a job. Ask standard interview questions. Keep replies short.", promptCz: "Jste profesionální personalista vedoucí pohovor. Ptejte se na standardní otázky. Odpovídejte stručně." },
+  { id: 'coffee', title: 'Ordering Coffee', titleCz: 'Objednávka kávy', icon: '☕', prompt: "You are a busy barista at a coffee shop. Ask the user what they want to order. Be polite but quick.", promptCz: "Jste barista v kavárně. Zeptejte se uživatele, co si dá. Buďte zdvořilý, ale rychlý." },
+  { id: 'social', title: 'Small Talk', titleCz: 'Small Talk', icon: '👋', prompt: "You are a friendly neighbor meeting the user at the mailbox. Make casual small talk about the weather or weekend.", promptCz: "Jste přátelský soused u schránek. Veďte nezávazný hovor o počasí nebo víkendu." },
+  { id: 'custom', title: 'Custom Topic', titleCz: 'Vlastní téma', icon: '✨', prompt: "You are a helpful conversation partner. Discuss whatever topic the user brings up.", promptCz: "Jste nápomocný konverzační partner. Bavte se o čemkoliv, co uživatel nadnese." }
 ];
+
+// Personalized scenarios based on onboarding triggers
+const PERSONALIZED_SCENARIOS = {
+  // Phone call scenarios
+  phone: [
+    {
+      id: 'phone_doctor', title: 'Doctor Appointment', titleCz: 'Objednání k lékaři', icon: '🏥',
+      prompt: "You are a receptionist at a doctor's office. The user is calling to schedule an appointment. Ask for their name, reason for visit, and preferred time.",
+      promptCz: "Jste recepční v ordinaci lékaře. Uživatel volá, aby si objednal termín. Zeptejte se na jméno, důvod návštěvy a preferovaný čas."
+    },
+    {
+      id: 'phone_pizza', title: 'Order Pizza', titleCz: 'Objednávka pizzy', icon: '🍕',
+      prompt: "You are a pizza delivery operator. Take the user's order. Ask what pizza they want, size, any extras, and delivery address.",
+      promptCz: "Jste operátor pizzerie. Přijměte objednávku. Zeptejte se na druh pizzy, velikost, přílohy a adresu doručení."
+    },
+    {
+      id: 'phone_bank', title: 'Bank Call', titleCz: 'Volání do banky', icon: '🏦',
+      prompt: "You are a bank customer service representative. The user has a question about their account. Be professional and helpful.",
+      promptCz: "Jste pracovník zákaznické linky banky. Uživatel má dotaz ohledně svého účtu. Buďte profesionální a nápomocní."
+    },
+    {
+      id: 'phone_support', title: 'Tech Support', titleCz: 'Technická podpora', icon: '💻',
+      prompt: "You are a tech support agent. The user is calling about a problem with their internet. Ask troubleshooting questions.",
+      promptCz: "Jste pracovník technické podpory. Uživatel volá kvůli problému s internetem. Ptejte se na diagnostické otázky."
+    },
+  ],
+
+  // Presentation scenarios
+  presentation: [
+    {
+      id: 'pres_intro', title: 'Self Introduction', titleCz: 'Představení sebe', icon: '🎤',
+      prompt: "You are an audience member at a networking event. The user will introduce themselves. React positively and ask a follow-up question.",
+      promptCz: "Jste účastník networkingové akce. Uživatel se představí. Reagujte pozitivně a položte doplňující otázku."
+    },
+    {
+      id: 'pres_project', title: 'Project Update', titleCz: 'Prezentace projektu', icon: '📊',
+      prompt: "You are a manager listening to a project status update. Ask clarifying questions about timeline, budget, or challenges.",
+      promptCz: "Jste manažer poslouchající update projektu. Ptejte se na časový plán, rozpočet nebo výzvy."
+    },
+    {
+      id: 'pres_pitch', title: 'Sales Pitch', titleCz: 'Prodejní prezentace', icon: '💡',
+      prompt: "You are a potential client hearing a sales pitch. Show interest but ask tough questions about pricing and competition.",
+      promptCz: "Jste potenciální klient poslouchající prodejní prezentaci. Ukažte zájem, ale ptejte se na cenu a konkurenci."
+    },
+  ],
+
+  // Stranger scenarios
+  strangers: [
+    {
+      id: 'stranger_directions', title: 'Ask for Directions', titleCz: 'Zeptat se na cestu', icon: '🗺️',
+      prompt: "You are a local resident. A stranger (the user) is asking you for directions. Be helpful and give clear directions.",
+      promptCz: "Jste místní obyvatel. Cizinec (uživatel) se vás ptá na cestu. Buďte nápomocní a dejte jasné pokyny."
+    },
+    {
+      id: 'stranger_shop', title: 'Shopping Help', titleCz: 'Pomoc v obchodě', icon: '🛍️',
+      prompt: "You are a store employee. The user needs help finding a product. Ask what they're looking for and guide them.",
+      promptCz: "Jste zaměstnanec obchodu. Uživatel potřebuje najít produkt. Zeptejte se, co hledá, a naveďte ho."
+    },
+    {
+      id: 'stranger_party', title: 'Party Introduction', titleCz: 'Seznámení na večírku', icon: '🎉',
+      prompt: "You are a guest at a party where you don't know anyone. The user approaches you. Make friendly small talk.",
+      promptCz: "Jste host na večírku, kde nikoho neznáte. Uživatel k vám přijde. Zvědte přátelský small talk."
+    },
+  ],
+
+  // Authority figures
+  authority: [
+    {
+      id: 'auth_boss', title: 'Talk to Boss', titleCz: 'Mluvit se šéfem', icon: '👔',
+      prompt: "You are a busy but fair boss. The user wants to discuss something with you. Listen and respond professionally.",
+      promptCz: "Jste vytížený, ale férový šéf. Uživatel s vámi chce něco probrat. Poslouchejte a reagujte profesionálně."
+    },
+    {
+      id: 'auth_teacher', title: 'Ask Teacher', titleCz: 'Zeptat se učitele', icon: '📚',
+      prompt: "You are a teacher. The user is a student asking about an assignment or grade. Be helpful but maintain authority.",
+      promptCz: "Jste učitel. Uživatel je student s dotazem na úkol nebo známku. Buďte nápomocní, ale udržujte autoritu."
+    },
+    {
+      id: 'auth_police', title: 'Traffic Stop', titleCz: 'Dopravní kontrola', icon: '👮',
+      prompt: "You are a police officer who pulled over the user for a minor traffic violation. Be professional and explain the situation.",
+      promptCz: "Jste policista, který zastavil uživatele za drobný dopravní přestupek. Buďte profesionální a vysvětlete situaci."
+    },
+  ],
+
+  // Work scenarios
+  work: [
+    {
+      id: 'work_meeting', title: 'Team Meeting', titleCz: 'Týmová schůzka', icon: '👥',
+      prompt: "You are a colleague in a team meeting. The user needs to share their update. Ask relevant questions.",
+      promptCz: "Jste kolega na týmové schůzce. Uživatel musí sdílet svůj update. Ptejte se relevantní otázky."
+    },
+    {
+      id: 'work_client', title: 'Client Call', titleCz: 'Hovor s klientem', icon: '📞',
+      prompt: "You are an important client. The user is calling you about a project. Be demanding but reasonable.",
+      promptCz: "Jste důležitý klient. Uživatel vám volá ohledně projektu. Buďte náročný, ale rozumný."
+    },
+    {
+      id: 'work_negotiate', title: 'Salary Talk', titleCz: 'Jednání o platu', icon: '💰',
+      prompt: "You are an HR manager. The user wants to discuss a raise. Listen to their arguments and respond fairly.",
+      promptCz: "Jste HR manažer. Uživatel chce jednat o zvýšení platu. Poslouchejte argumenty a reagujte férově."
+    },
+  ],
+
+  // School scenarios
+  school: [
+    {
+      id: 'school_oral', title: 'Oral Exam', titleCz: 'Ústní zkouška', icon: '📝',
+      prompt: "You are a professor giving an oral exam. Ask the user questions about their topic and follow up on their answers.",
+      promptCz: "Jste profesor dávající ústní zkoušku. Ptejte se uživatele na jeho téma a navazujte na odpovědi."
+    },
+    {
+      id: 'school_group', title: 'Group Project', titleCz: 'Skupinový projekt', icon: '👨‍👩‍👧‍👦',
+      prompt: "You are a classmate working on a group project. Discuss task division and deadlines with the user.",
+      promptCz: "Jste spolužák pracující na skupinovém projektu. Diskutujte rozdělení úkolů a termíny."
+    },
+  ],
+
+  // Social scenarios
+  social: [
+    {
+      id: 'social_date', title: 'First Date', titleCz: 'První rande', icon: '❤️',
+      prompt: "You are on a first date with the user. Be friendly, ask about their interests, hobbies, and life.",
+      promptCz: "Jste na prvním rande s uživatelem. Buďte přátelští, ptejte se na zájmy, koníčky a život."
+    },
+    {
+      id: 'social_reunion', title: 'Family Reunion', titleCz: 'Rodinný sraz', icon: '👨‍👩‍👧‍👦',
+      prompt: "You are a distant relative at a family reunion. Make conversation about life, work, and family.",
+      promptCz: "Jste vzdálený příbuzný na rodinném srazu. Konverzujte o životě, práci a rodině."
+    },
+  ],
+
+  // Daily errands
+  daily: [
+    {
+      id: 'daily_restaurant', title: 'Restaurant Order', titleCz: 'Objednávka v restauraci', icon: '🍽️',
+      prompt: "You are a waiter at a restaurant. Take the user's order, ask about drinks, appetizers, and any dietary restrictions.",
+      promptCz: "Jste číšník v restauraci. Přijměte objednávku, zeptejte se na nápoje, předkrmy a dietní omezení."
+    },
+    {
+      id: 'daily_return', title: 'Return Item', titleCz: 'Vrácení zboží', icon: '🔄',
+      prompt: "You are a customer service representative. The user wants to return an item. Ask about the reason and process the return.",
+      promptCz: "Jste pracovník zákaznického servisu. Uživatel chce vrátit zboží. Zeptejte se na důvod a zpracujte vrácení."
+    },
+    {
+      id: 'daily_haircut', title: 'Haircut', titleCz: 'Kadeřnictví', icon: '💇',
+      prompt: "You are a hairdresser. Ask the user what style they want, how short, and make small talk during the haircut.",
+      promptCz: "Jste kadeřník. Zeptejte se uživatele na požadovaný styl, délku, a veďte small talk během stříhání."
+    },
+  ]
+};
+
+// Function to get recommended scenarios based on user profile
+const getRecommendedScenarios = (userProfile) => {
+  if (!userProfile || Object.keys(userProfile).length === 0) {
+    return CONVERSATION_SCENARIOS;
+  }
+
+  let recommended = [];
+
+  // Add scenarios based on triggers
+  if (userProfile.triggers && PERSONALIZED_SCENARIOS[userProfile.triggers]) {
+    recommended = [...recommended, ...PERSONALIZED_SCENARIOS[userProfile.triggers]];
+  }
+
+  // Add scenarios based on pressure areas
+  if (userProfile.pressure && PERSONALIZED_SCENARIOS[userProfile.pressure]) {
+    recommended = [...recommended, ...PERSONALIZED_SCENARIOS[userProfile.pressure]];
+  }
+
+  // Always include custom scenario
+  recommended.push(CONVERSATION_SCENARIOS.find(s => s.id === 'custom'));
+
+  // If nothing matched, return default
+  if (recommended.length <= 1) {
+    return CONVERSATION_SCENARIOS;
+  }
+
+  return recommended;
+};
 
 // --- Components ---
 
@@ -1151,9 +1330,12 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
   );
 };
 
-const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete }) => {
+const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete, userProfile }) => {
   const [mode, setMode] = useState('read'); // 'read' or 'chat'
-  const [selectedScenario, setSelectedScenario] = useState(CONVERSATION_SCENARIOS[0]);
+
+  // Get personalized scenarios
+  const scenarios = useMemo(() => getRecommendedScenarios(userProfile), [userProfile]);
+  const [selectedScenario, setSelectedScenario] = useState(scenarios[0]);
 
   // Read Mode State
   const [textIndex, setTextIndex] = useState(0);
@@ -1341,11 +1523,16 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete }) => {
     setChatHistory(updatedHistory);
 
     // Initial System Prompt based on Scenario
-    let sysMsg = { role: "system", content: "You are a helpful assistant." };
-    if (selectedScenario.id === 'job') sysMsg.content = "You are a strict HR manager conducting a job interview. Be professional but tough.";
-    if (selectedScenario.id === 'coffee') sysMsg.content = "You are a busy barista at a coffee shop. Take the order quickly.";
-    if (selectedScenario.id === 'social') sysMsg.content = "You are a friendly neighbor chatting about the weather.";
-    if (selectedScenario.id === 'custom') sysMsg.content = `Roleplay Scenario: ${customPromptInput || 'General Conversation'}. Stay in character.`;
+    let promptText = "You are a helpful assistant.";
+    if (selectedScenario.id === 'custom') {
+      promptText = `Roleplay Scenario: ${customPromptInput || 'General Conversation'}. Stay in character.`;
+    } else {
+      // Use localized prompt if available
+      promptText = (language === 'cz' && selectedScenario.promptCz)
+        ? selectedScenario.promptCz
+        : selectedScenario.prompt;
+    }
+    const sysMsg = { role: "system", content: promptText };
 
     try {
       const headers = { 'Content-Type': 'application/json' };
@@ -1418,14 +1605,14 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete }) => {
         <>
           {/* Scenario Selector */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20, paddingLeft: 20 }}>
-            {CONVERSATION_SCENARIOS.map(sc => (
+            {scenarios.map(sc => (
               <TouchableOpacity
                 key={sc.id}
                 style={{ marginRight: 10, backgroundColor: selectedScenario.id === sc.id ? COLORS.ACCENT_LIME : 'rgba(255,255,255,0.1)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 }}
                 onPress={() => { setSelectedScenario(sc); setChatHistory([]); }}
               >
                 <Text style={{ color: selectedScenario.id === sc.id ? COLORS.BG_DARK : COLORS.TEXT_WHITE, fontWeight: 'bold' }}>
-                  {sc.icon} {sc.id === 'job' ? t('scen_job') : sc.id === 'coffee' ? t('scen_coffee') : sc.id === 'social' ? t('scen_social') : t('scen_custom')}
+                  {sc.icon} {language === 'cz' && sc.titleCz ? sc.titleCz : sc.title}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -2170,7 +2357,7 @@ export default function App() {
           <View style={{ maxWidth: 1000, alignSelf: 'center', width: '100%', flex: 1 }}>
             {activeTab === 'home' && <HomeScreen t={t} streak={streak} onStartRelax={() => setActiveTab('relax')} onStartSos={() => setActiveTab('sos')} onStartPractice={() => setActiveTab('practice')} />}
             {activeTab === 'relax' && <RelaxationScreen t={t} onComplete={markPracticeComplete} />}
-            {activeTab === 'practice' && <PracticeScreen t={t} language={language} apiKey={apiKey} onComplete={markPracticeComplete} />}
+            {activeTab === 'practice' && <PracticeScreen t={t} language={language} apiKey={apiKey} onComplete={markPracticeComplete} userProfile={userProfile} />}
             {activeTab === 'settings' && <SettingsScreen t={t} language={language} setLanguage={saveLang} apiKey={apiKey} setApiKey={saveKey} onReset={handleReset} onLogin={() => setActiveTab('auth')} user={user} />}
             {activeTab === 'sos' && <SosScreen t={t} onExit={() => setActiveTab('home')} />}
             {activeTab === 'auth' && <AuthScreen t={t} colors={COLORS} onLoginSuccess={() => setActiveTab('home')} onCancel={() => setActiveTab('home')} />}
