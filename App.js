@@ -458,7 +458,27 @@ const LandingScreen = ({ t, onGetStarted }) => {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionHeader}>{t('why_us')}</Text>
           <View style={gridStyle}>
-            {/* SOS Panic Button - FEATURED */}
+            {/* AI WEEKLY PLAN - NEW FEATURE */}
+            {stats.aiPlan && (
+              <View style={{ marginBottom: 25 }}>
+                <Text style={styles.sectionLabel}>🧠 AI Recovery Plan</Text>
+                <View style={{ backgroundColor: '#11221E', padding: 20, borderRadius: 16, borderLeftWidth: 4, borderLeftColor: stats.aiPlan.phaseColor }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <Text style={{ color: stats.aiPlan.phaseColor, fontWeight: 'bold', fontSize: 16 }}>{stats.aiPlan.phase}</Text>
+                    <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>Updated: Today</Text>
+                  </View>
+                  <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 15, marginBottom: 15, lineHeight: 22 }}>
+                    "{stats.aiPlan.aiAdvice}"
+                  </Text>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
+                    <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12, marginBottom: 4 }}>RECOMMENDED FOCUS:</Text>
+                    <Text style={{ color: COLORS.TEXT_WHITE, fontWeight: 'bold', fontSize: 16 }}>{stats.aiPlan.focusArea}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* SOS Panic Button - Featured */}
             <View style={[styles.benefitCard, cardStyle, {
               borderColor: COLORS.ACCENT_ORANGE,
               borderWidth: 2,
@@ -1119,6 +1139,30 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
 
       const earnedBadges = BADGES.filter(b => b.req({ sessions, minutes, streak })).map(b => b.id);
 
+      // AI PROGRESSION LOGIC
+      // Determines user phase: Recovery (sad/low streak), Maintenance (started), Growth (on fire)
+      let phase = 'Maintenance';
+      let aiAdvice = 'Keep consistent.';
+      let focusArea = 'Practice & Relax';
+      let phaseColor = COLORS.ACCENT_LIME;
+
+      if (streak < 2 || sessions < 3) {
+        phase = 'Discovery Phase';
+        aiAdvice = 'Focus on short breathing exercises to build habit.';
+        focusArea = '🧘 Breathing (2 min)';
+        phaseColor = '#60A5FA'; // Blueish
+      } else if (streak >= 7 && minutes > 60) {
+        phase = 'Growth Phase 🚀';
+        aiAdvice = 'You are ready for harder challenges! Try a Mock Interview.';
+        focusArea = '💼 Job Interview Sim';
+        phaseColor = COLORS.ACCENT_ORANGE;
+      } else {
+        phase = 'Stabilization';
+        aiAdvice = 'Consistency is key. Try a casual coffee shop roleplay.';
+        focusArea = '☕ Ordering Coffee';
+        phaseColor = COLORS.ACCENT_LIME;
+      }
+
       setStats({
         totalSessions: sessions,
         totalMinutes: minutes,
@@ -1127,7 +1171,8 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
         earnedBadges,
         averageWpm: parseInt(wpm) || 0,
         lastPractice: lastDate,
-        weeklyActivity: weekData ? JSON.parse(weekData) : [false, false, false, false, false, false, false]
+        weeklyActivity: weekData ? JSON.parse(weekData) : [false, false, false, false, false, false, false],
+        aiPlan: { phase, aiAdvice, focusArea, phaseColor }
       });
 
       // Load Challenge Status
@@ -1761,7 +1806,7 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete, userProfil
   return (
     <ScrollView style={styles.screenScroll}>
       <View style={styles.navHeader}>
-        <TouchableOpacity><Text style={styles.backArrow}>◀</Text></TouchableOpacity>
+        <View style={{ width: 20 }} />
         <Text style={styles.navTitle}>{t('practice_title')}</Text>
         <View style={{ width: 20 }} />
       </View>
@@ -2032,7 +2077,7 @@ const RelaxationScreen = ({ t, onComplete }) => {
   return (
     <ScrollView style={styles.screenScroll}>
       <View style={styles.navHeader}>
-        <TouchableOpacity><Text style={styles.backArrow}>◀</Text></TouchableOpacity>
+        <View style={{ width: 20 }} />
         <Text style={styles.navTitle}>{t('relax_title')}</Text>
         <View style={{ width: 20 }} />
       </View>
@@ -2373,6 +2418,17 @@ const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset, 
       {/* App Info */}
       <Text style={styles.sectionLabel}>About</Text>
       <View style={{ marginBottom: 30, padding: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12 }}>
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, backgroundColor: 'rgba(212, 238, 159, 0.1)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: COLORS.ACCENT_LIME }}
+          onPress={() => Linking.openURL('mailto:speeklymng@gmail.com?subject=Find%20Speech%20Therapist')}
+        >
+          <Text style={{ fontSize: 24, marginRight: 10 }}>👨‍⚕️</Text>
+          <View>
+            <Text style={{ color: COLORS.TEXT_WHITE, fontWeight: 'bold' }}>Find a Specialist</Text>
+            <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>Connect with certified therapists</Text>
+          </View>
+        </TouchableOpacity>
+
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
           <Text style={{ color: COLORS.TEXT_SEC }}>Version</Text>
           <Text style={{ color: COLORS.TEXT_WHITE }}>1.0.0</Text>
