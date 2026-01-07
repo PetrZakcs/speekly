@@ -1064,6 +1064,20 @@ const BADGES = [
   { id: 'time_1h', name: 'Dedication', icon: '⏳', desc: 'Practiced 1 hour', req: (s) => s.minutes >= 60 },
   { id: 'time_5h', name: 'Mastery', icon: '👑', desc: 'Practiced 5 hours', req: (s) => s.minutes >= 300 }
 ];
+
+const DAILY_CHALLENGES = [
+  { id: 'c1', text: 'Read one paragraph aloud to yourself.', textCz: 'Přečti si jeden odstavec nahlas pro sebe.', xp: 30, icon: '📖' },
+  { id: 'c2', text: 'Send a voice message instead of text.', textCz: 'Pošli hlasovou zprávu místo textovky.', xp: 50, icon: '🎙️' },
+  { id: 'c3', text: 'Practice focused breathing for 2 mins.', textCz: 'Trénuj 2 minuty soustředěné dýchání.', xp: 20, icon: '🧘' },
+  { id: 'c4', text: 'Say "Hello" to a stranger/cashier.', textCz: 'Řekni "Dobrý den" cizímu člověku/pokladní.', xp: 100, icon: '👋' },
+  { id: 'c5', text: 'Call a friend just to say hi.', textCz: 'Zavolej kamarádovi jen tak na pozdrav.', xp: 150, icon: '📞' },
+  { id: 'c6', text: 'Order food/drink verbally.', textCz: 'Objednej si jídlo/pití ústně.', xp: 80, icon: '☕' },
+  { id: 'c7', text: 'Ask someone for the time/directions.', textCz: 'Zeptej se někoho na čas nebo cestu.', xp: 100, icon: '🗺️' },
+  { id: 'c8', text: 'Record yourself speaking for 1 min.', textCz: 'Nahraj se 1 minutu při mluvení.', xp: 40, icon: '📱' },
+  { id: 'c9', text: 'Practice 5 difficult words slowly.', textCz: 'Trénuj pomalu 5 obtížných slov.', xp: 30, icon: '🐌' },
+  { id: 'c10', text: 'Make eye contact while speaking.', textCz: 'Udržuj oční kontakt při mluvení.', xp: 60, icon: '👁️' }
+];
+
 const getExp = (mins, sess) => (mins * 10) + (sess * 50);
 const getLevel = (xp) => Math.floor(Math.sqrt(xp) * 0.2) + 1;
 
@@ -1115,10 +1129,48 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
         lastPractice: lastDate,
         weeklyActivity: weekData ? JSON.parse(weekData) : [false, false, false, false, false, false, false]
       });
+
+      // Load Challenge Status
+      const todayStr = new Date().toDateString();
+      const savedDate = await AsyncStorage.getItem('challenge_date');
+      const savedCompleted = await AsyncStorage.getItem('challenge_completed');
+
+      if (savedDate !== todayStr) {
+        // New day, reset challenge
+        setIsChallengeCompleted(false);
+        const randomChallenge = DAILY_CHALLENGES[Math.floor(Math.random() * DAILY_CHALLENGES.length)];
+        setDailyChallenge(randomChallenge);
+        await AsyncStorage.setItem('challenge_date', todayStr);
+        await AsyncStorage.setItem('current_challenge_id', randomChallenge.id);
+        await AsyncStorage.setItem('challenge_completed', 'false');
+      } else {
+        // Same day, load state
+        setIsChallengeCompleted(savedCompleted === 'true');
+        const savedId = await AsyncStorage.getItem('current_challenge_id');
+        const challenge = DAILY_CHALLENGES.find(c => c.id === savedId) || DAILY_CHALLENGES[0];
+        setDailyChallenge(challenge);
+      }
     } catch (e) {
       console.log('Error loading stats:', e);
     }
   };
+
+  const completeChallenge = async () => {
+    if (isChallengeCompleted) return;
+
+    // Add XP
+    // Note: In a real app we would store 'challenge_xp' separately, simplified here
+    const newMinutes = stats.totalMinutes + (dailyChallenge.xp / 10); // Hack to add XP equivalent
+    await AsyncStorage.setItem('total_minutes', newMinutes.toString());
+
+    await AsyncStorage.setItem('challenge_completed', 'true');
+    setIsChallengeCompleted(true);
+    Alert.alert("🎉 Challenge Complete!", `You earned ${dailyChallenge.xp} XP!`);
+    loadStats(); // Reload to update level
+  };
+
+  const [dailyChallenge, setDailyChallenge] = useState(DAILY_CHALLENGES[0]);
+  const [isChallengeCompleted, setIsChallengeCompleted] = useState(false);
 
   const getMotivationalMessage = () => {
     if (streak === 0) return "Start your journey today! 🌱";
@@ -1139,6 +1191,39 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>{greeting}! 👋</Text>
         <Text style={styles.headerSubtitle}>{getMotivationalMessage()}</Text>
+      </View>
+
+      {/* Daily Challenge Card - New Feature */}
+      <View style={{ marginBottom: 25 }}>
+        <Text style={styles.sectionLabel}>🎯 {t('hello').includes('Ahoj') ? 'Dnešní výzva' : 'Usage Mission'}</Text>
+        <View style={{
+          backgroundColor: isChallengeCompleted ? 'rgba(212, 238, 159, 0.1)' : 'rgba(255,255,255,0.05)',
+          borderWidth: 1,
+          borderColor: isChallengeCompleted ? COLORS.ACCENT_LIME : 'rgba(255,255,255,0.1)',
+          borderRadius: 16,
+          padding: 20
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
+            <Text style={{ fontSize: 32, marginRight: 15 }}>{isChallengeCompleted ? '✅' : dailyChallenge.icon}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 18, fontWeight: 'bold' }}>
+                {t('hello').includes('Ahoj') ? dailyChallenge.textCz : dailyChallenge.text}
+              </Text>
+              <Text style={{ color: isChallengeCompleted ? COLORS.ACCENT_LIME : COLORS.TEXT_SEC, fontSize: 14, marginTop: 4 }}>
+                {isChallengeCompleted ? 'Completed! +XP earned' : `Reward: ${dailyChallenge.xp} XP`}
+              </Text>
+            </View>
+          </View>
+
+          {!isChallengeCompleted && (
+            <TouchableOpacity
+              style={[styles.limeButton, { height: 44 }]}
+              onPress={completeChallenge}
+            >
+              <Text style={[styles.limeButtonText, { fontSize: 14 }]}>Mark as Complete</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Streak & Quick Stats Row */}
