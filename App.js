@@ -24,6 +24,20 @@ import { StatusBar } from 'expo-status-bar';
 import AuthScreen from './components/AuthScreen';
 import { Analytics } from '@vercel/analytics/react';
 
+// Register Service Worker for PWA
+if (Platform.OS === 'web' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('SW registered:', registration.scope);
+      })
+      .catch((error) => {
+        console.log('SW registration failed:', error);
+      });
+  });
+}
+
+
 // --- Theme Constants (Forest Theme) ---
 const COLORS = {
   BG_DARK: '#0F2822',       // Deep Forest Green

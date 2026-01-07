@@ -50,6 +50,10 @@
             "dest": "/dist/icon.png"
         },
         {
+            "src": "/sw.js",
+            "dest": "/dist/sw.js"
+        },
+        {
             "src": "/(.*)",
             "dest": "/dist/index.html"
         }

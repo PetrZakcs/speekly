@@ -27,7 +27,7 @@ const ICON_FILE = 'icon.png';
 
 console.log('🚀 Starting PWA Post-Build Process...');
 
-// 1. Copy Manifest and Icon
+// 1. Copy Manifest, Icon, and Service Worker
 if (fs.existsSync(PUBLIC_DIR)) {
     // Copy manifest
     try {
@@ -37,6 +37,13 @@ if (fs.existsSync(PUBLIC_DIR)) {
         // Copy icon
         fs.copyFileSync(path.join(PUBLIC_DIR, ICON_FILE), path.join(buildDir, ICON_FILE));
         console.log(`✅ Copied ${ICON_FILE}`);
+
+        // Copy service worker
+        const SW_FILE = 'sw.js';
+        if (fs.existsSync(path.join(PUBLIC_DIR, SW_FILE))) {
+            fs.copyFileSync(path.join(PUBLIC_DIR, SW_FILE), path.join(buildDir, SW_FILE));
+            console.log(`✅ Copied ${SW_FILE}`);
+        }
     } catch (e) {
         console.error('Error copying assets:', e);
     }

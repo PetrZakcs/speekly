@@ -1,15 +1,31 @@
 {
     "short_name": "Speekly",
     "name": "Speekly - AI Speech Therapist",
+    "description": "Overcome stuttering and anxiety with your personal AI Speech Therapist",
     "icons": [
         {
             "src": "icon.png",
-            "sizes": "1024x1024",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icon.png",
+            "sizes": "192x192",
             "type": "image/png"
         }
     ],
-    "start_url": ".",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
+    "orientation": "portrait",
     "theme_color": "#0F2822",
-    "background_color": "#0F2822"
+    "background_color": "#0F2822",
+    "categories": [
+        "health",
+        "medical",
+        "lifestyle"
+    ],
+    "lang": "en",
+    "prefer_related_applications": false
 }
