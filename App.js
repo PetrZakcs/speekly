@@ -1277,57 +1277,141 @@ const SosScreen = ({ t, onExit }) => {
   );
 };
 
-const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset, user, onLogin }) => (
-  <ScrollView style={styles.screenScroll}>
-    <Text style={styles.headerTitle}>{t('settings')}</Text>
+const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset, user, onLogin }) => {
+  const [isPremium, setIsPremium] = useState(false);
 
-    {/* Account Section */}
-    <Text style={styles.sectionLabel}>Account / Účet</Text>
-    <View style={{ marginBottom: 20, padding: 16, backgroundColor: 'rgba(212,238,159,0.05)', borderRadius: 12 }}>
-      {user ? (
-        <>
-          <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
-            👤 {user.email}
-          </Text>
-          <TouchableOpacity style={[styles.limeButton, { backgroundColor: '#333', height: 44 }]} onPress={() => supabase.auth.signOut()}>
-            <Text style={{ color: '#fff', fontWeight: 'bold' }}>Sign Out</Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <>
-          <Text style={{ color: COLORS.TEXT_SEC, marginBottom: 12 }}>Sync your progress across devices.</Text>
-          <TouchableOpacity style={styles.limeButton} onPress={onLogin}>
-            <Text style={styles.limeButtonText}>Sign In / Register</Text>
-          </TouchableOpacity>
-        </>
+  useEffect(() => {
+    const checkPremium = async () => {
+      const premium = await AsyncStorage.getItem('is_premium');
+      setIsPremium(premium === 'true');
+    };
+    checkPremium();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    await AsyncStorage.removeItem('is_premium');
+    Alert.alert('Signed Out', 'You have been signed out.');
+  };
+
+  return (
+    <ScrollView style={styles.screenScroll}>
+      <Text style={styles.headerTitle}>{t('settings')}</Text>
+
+      {/* Premium Status Banner */}
+      {isPremium && (
+        <View style={{
+          backgroundColor: 'rgba(212,238,159,0.15)',
+          padding: 16,
+          borderRadius: 12,
+          marginBottom: 20,
+          borderWidth: 1,
+          borderColor: COLORS.ACCENT_LIME,
+          flexDirection: 'row',
+          alignItems: 'center'
+        }}>
+          <Text style={{ fontSize: 28, marginRight: 12 }}>👑</Text>
+          <View>
+            <Text style={{ color: COLORS.ACCENT_LIME, fontSize: 18, fontWeight: 'bold' }}>Premium Active</Text>
+            <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>Lifetime access • All features unlocked</Text>
+          </View>
+        </View>
       )}
-    </View>
 
-    <Text style={styles.sectionLabel}>Language / Jazyk</Text>
-    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-      <TouchableOpacity style={[styles.langBtn, language === 'en' && styles.langBtnActive]} onPress={() => setLanguage('en')}>
-        <Text style={styles.langText}>English 🇺🇸</Text>
+      {/* Account Section */}
+      <Text style={styles.sectionLabel}>Account / Účet</Text>
+      <View style={{ marginBottom: 20, padding: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+        {user ? (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.ACCENT_LIME, justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+                <Text style={{ fontSize: 24, color: COLORS.BG_DARK }}>👤</Text>
+              </View>
+              <View>
+                <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 16, fontWeight: 'bold' }}>{user.email}</Text>
+                <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>Logged in</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: 12, borderRadius: 8, alignItems: 'center' }}
+              onPress={handleSignOut}
+            >
+              <Text style={{ color: COLORS.TEXT_SEC, fontWeight: '600' }}>Sign Out</Text>
+            </TouchableOpacity>
+          </>
+        ) : isPremium ? (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={{ fontSize: 24, marginRight: 10 }}>✅</Text>
+              <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 16 }}>Premium Access Active</Text>
+            </View>
+            <Text style={{ color: COLORS.TEXT_SEC, fontSize: 13, marginBottom: 12 }}>
+              Sign in to sync your progress across devices.
+            </Text>
+            <TouchableOpacity style={styles.limeButton} onPress={onLogin}>
+              <Text style={styles.limeButtonText}>Sign In / Create Account</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={{ color: COLORS.TEXT_SEC, marginBottom: 12 }}>Sync your progress across devices.</Text>
+            <TouchableOpacity style={styles.limeButton} onPress={onLogin}>
+              <Text style={styles.limeButtonText}>Sign In / Register</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+
+      {/* Language */}
+      <Text style={styles.sectionLabel}>Language / Jazyk</Text>
+      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 30 }}>
+        <TouchableOpacity style={[styles.langBtn, language === 'en' && styles.langBtnActive]} onPress={() => setLanguage('en')}>
+          <Text style={styles.langText}>English 🇺🇸</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.langBtn, language === 'cz' && styles.langBtnActive]} onPress={() => setLanguage('cz')}>
+          <Text style={styles.langText}>Čeština 🇨🇿</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* App Info */}
+      <Text style={styles.sectionLabel}>About</Text>
+      <View style={{ marginBottom: 30, padding: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+          <Text style={{ color: COLORS.TEXT_SEC }}>Version</Text>
+          <Text style={{ color: COLORS.TEXT_WHITE }}>1.0.0</Text>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+          <Text style={{ color: COLORS.TEXT_SEC }}>Status</Text>
+          <Text style={{ color: COLORS.ACCENT_LIME }}>{isPremium ? '✅ Premium' : '🔒 Free'}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text style={{ color: COLORS.TEXT_SEC }}>Support</Text>
+          <Text style={{ color: COLORS.ACCENT_LIME }}>help@speekly.app</Text>
+        </View>
+      </View>
+
+      {/* Danger Zone */}
+      <Text style={[styles.sectionLabel, { color: COLORS.ACCENT_ORANGE }]}>Danger Zone</Text>
+      <TouchableOpacity
+        style={{ backgroundColor: 'rgba(249,115,22,0.1)', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', alignItems: 'center' }}
+        onPress={onReset}
+      >
+        <Text style={{ color: COLORS.ACCENT_ORANGE, fontWeight: 'bold' }}>🔄 Reset App Data</Text>
+        <Text style={{ color: COLORS.TEXT_SEC, fontSize: 11, marginTop: 4 }}>Clears all local data and restarts</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.langBtn, language === 'cz' && styles.langBtnActive]} onPress={() => setLanguage('cz')}>
-        <Text style={styles.langText}>Čeština 🇨🇿</Text>
-      </TouchableOpacity>
-    </View>
 
-
-
-    <Text style={[styles.sectionLabel, { marginTop: 40, color: COLORS.ACCENT_ORANGE }]}>Danger Zone</Text>
-    <TouchableOpacity style={[styles.limeButton, { backgroundColor: 'rgba(249,115,22,0.2)' }]} onPress={onReset}>
-      <Text style={{ color: COLORS.ACCENT_ORANGE, fontWeight: 'bold' }}>🔄 Reset / Re-test Flow</Text>
-    </TouchableOpacity>
-    <Text style={{ color: COLORS.TEXT_SEC, textAlign: 'center', marginTop: 10, fontSize: 12 }}>Clears payment & restarts app</Text>
-
-    <View style={{ marginTop: 40, marginBottom: 40, padding: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' }}>
-      <Text style={{ color: COLORS.TEXT_SEC, fontSize: 11, textAlign: 'center', fontStyle: 'italic' }}>
-        {t('disclaimer')}
-      </Text>
-    </View>
-  </ScrollView>
-);
+      {/* Disclaimer */}
+      <View style={{ marginTop: 40, marginBottom: 40, padding: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' }}>
+        <Text style={{ color: COLORS.TEXT_SEC, fontSize: 11, textAlign: 'center', fontStyle: 'italic', lineHeight: 16 }}>
+          {t('disclaimer')}
+        </Text>
+        <Text style={{ color: COLORS.TEXT_SEC, fontSize: 10, textAlign: 'center', marginTop: 10, opacity: 0.5 }}>
+          © 2024 Speekly. Made with ❤️ for people who stutter.
+        </Text>
+      </View>
+    </ScrollView>
+  );
+};
 
 
 
