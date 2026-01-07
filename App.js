@@ -973,18 +973,31 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [wpm, setWpm] = useState(0); // Words Per Minute
 
+  // Audio Recording State
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [recordings, setRecordings] = useState([]); // History of recordings
+
   // Refs
   const recognitionRef = useRef(null);
   const startTimeRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioPlayerRef = useRef(null);
 
   const startRecording = async () => {
     setTranscript('');
     setAiFeedback('');
     setWpm(0);
+    setAudioBlob(null);
+    setAudioUrl(null);
     setRecording(true);
     startTimeRef.current = Date.now();
+    audioChunksRef.current = [];
 
     if (Platform.OS === 'web') {
+      // Start speech recognition
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
@@ -1003,12 +1016,42 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete }) => {
         recognition.start();
         recognitionRef.current = recognition;
       }
+
+      // Start audio recording for playback
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const url = URL.createObjectURL(blob);
+          setAudioBlob(blob);
+          setAudioUrl(url);
+
+          // Stop all tracks
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start();
+        mediaRecorderRef.current = mediaRecorder;
+      } catch (err) {
+        console.log('Audio recording not available:', err);
+      }
     }
   };
 
   const stopRecording = () => {
     setRecording(false);
     if (recognitionRef.current) recognitionRef.current.stop();
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
 
     // Calculate WPM
     const durationSec = (Date.now() - startTimeRef.current) / 1000;
@@ -1021,6 +1064,24 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete }) => {
     setTimeout(() => {
       if (transcript.length > 2) handleFinalInput(transcript);
     }, 500);
+  };
+
+  // Play/Pause recorded audio
+  const togglePlayback = () => {
+    if (!audioUrl) return;
+
+    if (isPlaying) {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+      }
+      setIsPlaying(false);
+    } else {
+      const audio = new Audio(audioUrl);
+      audio.onended = () => setIsPlaying(false);
+      audio.play();
+      audioPlayerRef.current = audio;
+      setIsPlaying(true);
+    }
   };
 
   const handleFinalInput = (text) => {
@@ -1209,14 +1270,42 @@ const PracticeScreen = ({ t, language, apiKey, setApiKey, onComplete }) => {
       )}
 
       <View style={styles.micContainer}>
+        {/* Playback Button (left side) */}
+        {audioUrl && !recording && (
+          <TouchableOpacity
+            style={{
+              width: 50,
+              height: 50,
+              borderRadius: 25,
+              backgroundColor: isPlaying ? COLORS.ACCENT_ORANGE : 'rgba(212,238,159,0.2)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 20,
+              borderWidth: 2,
+              borderColor: isPlaying ? COLORS.ACCENT_ORANGE : COLORS.ACCENT_LIME
+            }}
+            onPress={togglePlayback}
+          >
+            <Text style={{ fontSize: 20 }}>{isPlaying ? '⏸️' : '▶️'}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Main Mic Button */}
         <TouchableOpacity
           style={[styles.micButton, recording && styles.micActive]}
           onPress={recording ? stopRecording : startRecording}
         >
           <Text style={styles.micIcon}>{recording ? '⬛' : '🎤'}</Text>
         </TouchableOpacity>
-        <Text style={styles.micLabel}>{recording ? 'Listening...' : t('press_record')}</Text>
+
+        {/* Empty space for balance when playback visible */}
+        {audioUrl && !recording && <View style={{ width: 70 }} />}
       </View>
+
+      {/* Recording Status */}
+      <Text style={styles.micLabel}>
+        {recording ? 'Listening...' : audioUrl ? 'Tap ▶️ to replay' : t('press_record')}
+      </Text>
 
       {/* Legacy Feedback Area (only for Read mode) */}
       {mode === 'read' && (transcript || aiFeedback) && (
