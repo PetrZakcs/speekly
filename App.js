@@ -1340,18 +1340,10 @@ const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset, 
             </TouchableOpacity>
           </>
         ) : isPremium ? (
-          <>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={{ fontSize: 24, marginRight: 10 }}>✅</Text>
-              <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 16 }}>Premium Access Active</Text>
-            </View>
-            <Text style={{ color: COLORS.TEXT_SEC, fontSize: 13, marginBottom: 12 }}>
-              Sign in to sync your progress across devices.
-            </Text>
-            <TouchableOpacity style={styles.limeButton} onPress={onLogin}>
-              <Text style={styles.limeButtonText}>Sign In / Create Account</Text>
-            </TouchableOpacity>
-          </>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{ fontSize: 24, marginRight: 10 }}>✅</Text>
+            <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 16 }}>Premium Access Active</Text>
+          </View>
         ) : (
           <>
             <Text style={{ color: COLORS.TEXT_SEC, marginBottom: 12 }}>Sync your progress across devices.</Text>
