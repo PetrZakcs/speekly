@@ -59,7 +59,7 @@ const DICTIONARY = {
     recommendation: 'Tip pro lepší řeč',
     start_breath: 'Uklidni svou mysl před mluvením',
     start_ex: 'Začít cvičení',
-    days_row: 'Dní cvičení',
+    days_row: 'Počet dní v řadě',
     ex_week: 'Relace týdně',
     practice_title: 'Terapie řeči',
     diff_text: 'Jiné cvičení',
@@ -1056,6 +1056,17 @@ const OnboardingScreen = ({ t, language, onComplete }) => {
 };
 
 
+/* Gamification Constants */
+const BADGES = [
+  { id: 'first_step', name: 'First Step', icon: '🌱', desc: 'Completed 1st session', req: (s) => s.sessions >= 1 },
+  { id: 'streak_3', name: 'On Fire', icon: '🔥', desc: '3 day streak', req: (s) => s.streak >= 3 },
+  { id: 'streak_7', name: 'Unstoppable', icon: '🚀', desc: '7 day streak', req: (s) => s.streak >= 7 },
+  { id: 'time_1h', name: 'Dedication', icon: '⏳', desc: 'Practiced 1 hour', req: (s) => s.minutes >= 60 },
+  { id: 'time_5h', name: 'Mastery', icon: '👑', desc: 'Practiced 5 hours', req: (s) => s.minutes >= 300 }
+];
+const getExp = (mins, sess) => (mins * 10) + (sess * 50);
+const getLevel = (xp) => Math.floor(Math.sqrt(xp) * 0.2) + 1;
+
 const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }) => {
   const [showInstall, setShowInstall] = useState(Platform.OS === 'web');
   const [stats, setStats] = useState({
@@ -1070,7 +1081,7 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
   useEffect(() => {
     loadStats();
     setGreeting(getGreeting());
-  }, []);
+  }, [streak]); // Reload if streak updates
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -1081,15 +1092,25 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
 
   const loadStats = async () => {
     try {
-      const sessions = await AsyncStorage.getItem('total_sessions');
-      const minutes = await AsyncStorage.getItem('total_minutes');
+      const sessionsStr = await AsyncStorage.getItem('total_sessions');
+      const minutesStr = await AsyncStorage.getItem('total_minutes');
       const wpm = await AsyncStorage.getItem('average_wpm');
       const lastDate = await AsyncStorage.getItem('last_practice_date');
       const weekData = await AsyncStorage.getItem('weekly_activity');
 
+      const sessions = parseInt(sessionsStr) || 0;
+      const minutes = parseInt(minutesStr) || 0;
+      const xp = getExp(minutes, sessions);
+      const level = getLevel(xp);
+
+      const earnedBadges = BADGES.filter(b => b.req({ sessions, minutes, streak })).map(b => b.id);
+
       setStats({
-        totalSessions: parseInt(sessions) || 0,
-        totalMinutes: parseInt(minutes) || 0,
+        totalSessions: sessions,
+        totalMinutes: minutes,
+        xp,
+        level,
+        earnedBadges,
         averageWpm: parseInt(wpm) || 0,
         lastPractice: lastDate,
         weeklyActivity: weekData ? JSON.parse(weekData) : [false, false, false, false, false, false, false]
@@ -1203,6 +1224,45 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
         <Text style={{ color: COLORS.TEXT_SEC, fontSize: 11, textAlign: 'center', marginTop: 12 }}>
           {stats.weeklyActivity.filter(Boolean).length}/7 days completed
         </Text>
+      </View>
+
+      {/* Level & Badges */}
+      <View style={{ marginBottom: 24 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+          <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 18, fontWeight: 'bold' }}>Level {stats.level || 1}</Text>
+          <Text style={{ color: COLORS.ACCENT_LIME, fontSize: 14 }}>{stats.xp || 0} XP</Text>
+        </View>
+        {/* Progress Bar */}
+        <View style={{ height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 4, marginBottom: 16 }}>
+          <View style={{
+            height: 8,
+            backgroundColor: COLORS.ACCENT_LIME,
+            borderRadius: 4,
+            width: `${Math.min(((stats.xp || 0) % 100), 100)}%` // Simplified progress logic
+          }} />
+        </View>
+
+        {/* Badges Row */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
+          {BADGES.map(badge => {
+            const isUnlocked = stats.earnedBadges?.includes(badge.id);
+            return (
+              <View key={badge.id} style={{
+                marginRight: 12,
+                alignItems: 'center',
+                opacity: isUnlocked ? 1 : 0.4,
+                backgroundColor: isUnlocked ? 'rgba(212,238,159,0.1)' : 'transparent',
+                padding: 10,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: isUnlocked ? COLORS.ACCENT_LIME : 'rgba(255,255,255,0.1)'
+              }}>
+                <Text style={{ fontSize: 24, marginBottom: 4 }}>{badge.icon}</Text>
+                <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 10, fontWeight: 'bold' }}>{badge.name}</Text>
+              </View>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* SOS Panic Button - Featured */}
@@ -1960,6 +2020,14 @@ const SosScreen = ({ t, onExit }) => {
     "It is okay to pause."
   ];
 
+  const speakText = (text) => {
+    if (Platform.OS === 'web' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      window.speechSynthesis.speak(u);
+    }
+  };
+
   useEffect(() => {
     // Timer
     const timer = setInterval(() => {
@@ -1993,12 +2061,15 @@ const SosScreen = ({ t, onExit }) => {
   }, []);
 
   return (
-    <View style={[styles.screenScroll, { alignItems: 'center', justifyContent: 'center', height: '90%', backgroundColor: isDiscrete ? '#000' : 'transparent' }]}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: isDiscrete ? '#000' : 'transparent' }}
+      contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', minHeight: '100%', paddingVertical: 40 }}
+    >
       <TouchableOpacity
-        style={{ position: 'absolute', top: 0, right: 0, padding: 10 }}
+        style={{ position: 'absolute', top: 40, right: 20, padding: 10, zIndex: 10 }}
         onPress={() => setIsDiscrete(!isDiscrete)}
       >
-        <Text style={{ fontSize: 24 }}>{isDiscrete ? '👁️‍🗨️' : '👁️'}</Text>
+        <Text style={{ fontSize: 24, color: '#FFF' }}>{isDiscrete ? '👁️‍🗨️' : '👁️'}</Text>
       </TouchableOpacity>
 
       <Text style={{ color: isDiscrete ? '#333' : COLORS.ACCENT_ORANGE, fontSize: 16, fontWeight: 'bold', marginBottom: 20 }}>
@@ -2024,10 +2095,30 @@ const SosScreen = ({ t, onExit }) => {
         "{AFFIRMATIONS[msgIndex]}"
       </Text>
 
+      {/* Helper Cards (TTS) */}
+      {!isDiscrete && (
+        <View style={{ width: '100%', maxWidth: 400, paddingHorizontal: 20, marginBottom: 30 }}>
+          {[
+            "I have a speech impediment, please be patient.",
+            "I need a moment to gather my thoughts.",
+            "Can I write this down instead?"
+          ].map((text, i) => (
+            <TouchableOpacity
+              key={i}
+              style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: 16, borderRadius: 12, flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}
+              onPress={() => speakText(text)}
+            >
+              <Text style={{ fontSize: 20, marginRight: 12 }}>🔊</Text>
+              <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 16 }}>{text}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       <TouchableOpacity style={[styles.limeButton, { backgroundColor: isDiscrete ? '#222' : COLORS.ACCENT_ORANGE, width: 200 }]} onPress={onExit}>
         <Text style={{ color: isDiscrete ? '#666' : '#FFF', fontWeight: 'bold', fontSize: 18 }}>{timeLeft > 0 ? `I'm Ready (${timeLeft}s)` : "I'm Ready"}</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
