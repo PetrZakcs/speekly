@@ -1126,18 +1126,41 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
 
   const loadStats = async () => {
     try {
-      const sessionsStr = await AsyncStorage.getItem('total_sessions');
-      const minutesStr = await AsyncStorage.getItem('total_minutes');
-      const wpm = await AsyncStorage.getItem('average_wpm');
-      const lastDate = await AsyncStorage.getItem('last_practice_date');
-      const weekData = await AsyncStorage.getItem('weekly_activity');
+      // 1. Load Local (Fast)
+      let sessions = parseInt(await AsyncStorage.getItem('total_sessions')) || 0;
+      let minutes = parseInt(await AsyncStorage.getItem('total_minutes')) || 0;
+      let wpm = parseInt(await AsyncStorage.getItem('average_wpm')) || 0;
+      let lastDate = await AsyncStorage.getItem('last_practice_date');
+      let weekData = await AsyncStorage.getItem('weekly_activity');
+      let streakVal = parseInt(await AsyncStorage.getItem('user_streak')) || 0;
 
-      const sessions = parseInt(sessionsStr) || 0;
-      const minutes = parseInt(minutesStr) || 0;
+      // 2. Load Cloud (Background Merge)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: rem } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        // If cloud data exists and is "better" (more sessions), overwrite local
+        if (rem && (rem.total_sessions || 0) > sessions) {
+          sessions = rem.total_sessions || 0;
+          minutes = rem.total_minutes || 0;
+          wpm = rem.average_wpm || 0;
+          lastDate = rem.last_practice_date;
+          streakVal = rem.streak || 0;
+          if (rem.weekly_activity) weekData = JSON.stringify(rem.weekly_activity);
+
+          // Update Local Cache
+          await AsyncStorage.setItem('total_sessions', sessions.toString());
+          await AsyncStorage.setItem('total_minutes', minutes.toString());
+          await AsyncStorage.setItem('average_wpm', wpm.toString());
+          if (lastDate) await AsyncStorage.setItem('last_practice_date', lastDate);
+          if (rem.weekly_activity) await AsyncStorage.setItem('weekly_activity', JSON.stringify(rem.weekly_activity));
+          await AsyncStorage.setItem('user_streak', streakVal.toString());
+        }
+      }
+
       const xp = getExp(minutes, sessions);
       const level = getLevel(xp);
 
-      const earnedBadges = BADGES.filter(b => b.req({ sessions, minutes, streak })).map(b => b.id);
+      const earnedBadges = BADGES.filter(b => b.req({ sessions, minutes, streak: streakVal })).map(b => b.id);
 
       // AI PROGRESSION LOGIC
       // Determines user phase: Recovery (sad/low streak), Maintenance (started), Growth (on fire)
@@ -1146,12 +1169,12 @@ const HomeScreen = ({ t, onStartRelax, onStartSos, onStartPractice, streak = 0 }
       let focusArea = 'Practice & Relax';
       let phaseColor = COLORS.ACCENT_LIME;
 
-      if (streak < 2 || sessions < 3) {
+      if (streakVal < 2 || sessions < 3) {
         phase = 'Discovery Phase';
         aiAdvice = 'Focus on short breathing exercises to build habit.';
         focusArea = '🧘 Breathing (2 min)';
         phaseColor = '#60A5FA'; // Blueish
-      } else if (streak >= 7 && minutes > 60) {
+      } else if (streakVal >= 7 && minutes > 60) {
         phase = 'Growth Phase 🚀';
         aiAdvice = 'You are ready for harder challenges! Try a Mock Interview.';
         focusArea = '💼 Job Interview Sim';
@@ -2648,7 +2671,10 @@ export default function App() {
           id: user.id,
           streak: newStreak,
           last_practice_date: today,
-          total_sessions: sessions + 1
+          total_sessions: sessions + 1,
+          total_minutes: minutes + durationMinutes,
+          weekly_activity: weeklyActivity,
+          updated_at: new Date()
         });
       }
     } catch (e) {
