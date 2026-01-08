@@ -458,25 +458,7 @@ const LandingScreen = ({ t, onGetStarted }) => {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionHeader}>{t('why_us')}</Text>
           <View style={gridStyle}>
-            {/* AI WEEKLY PLAN - NEW FEATURE */}
-            {stats.aiPlan && (
-              <View style={{ marginBottom: 25 }}>
-                <Text style={styles.sectionLabel}>🧠 AI Recovery Plan</Text>
-                <View style={{ backgroundColor: '#11221E', padding: 20, borderRadius: 16, borderLeftWidth: 4, borderLeftColor: stats.aiPlan.phaseColor }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <Text style={{ color: stats.aiPlan.phaseColor, fontWeight: 'bold', fontSize: 16 }}>{stats.aiPlan.phase}</Text>
-                    <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>Updated: Today</Text>
-                  </View>
-                  <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 15, marginBottom: 15, lineHeight: 22 }}>
-                    "{stats.aiPlan.aiAdvice}"
-                  </Text>
-                  <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
-                    <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12, marginBottom: 4 }}>RECOMMENDED FOCUS:</Text>
-                    <Text style={{ color: COLORS.TEXT_WHITE, fontWeight: 'bold', fontSize: 16 }}>{stats.aiPlan.focusArea}</Text>
-                  </View>
-                </View>
-              </View>
-            )}
+
 
             {/* SOS Panic Button - Featured */}
             <View style={[styles.benefitCard, cardStyle, {
