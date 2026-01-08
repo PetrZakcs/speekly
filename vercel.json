@@ -1,61 +1,17 @@
 {
-    "builds": [
-        {
-            "src": "api/**/*.js",
-            "use": "@vercel/node"
-        },
-        {
-            "src": "package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "dist"
-            }
+    "functions": {
+        "api/**/*.js": {
+            "runtime": "nodejs18.x"
         }
-    ],
-    "routes": [
+    },
+    "rewrites": [
         {
-            "src": "/api/checkout",
-            "dest": "/api/checkout.js"
+            "source": "/api/(.*)",
+            "destination": "/api/$1"
         },
         {
-            "src": "/api/webhook",
-            "dest": "/api/webhook.js"
-        },
-        {
-            "src": "/api/health",
-            "dest": "/api/health.js"
-        },
-        {
-            "src": "/api/chat",
-            "dest": "/api/chat.js"
-        },
-        {
-            "src": "/api/diagnose",
-            "dest": "/api/diagnose.js"
-        },
-        {
-            "src": "/_expo/(.*)",
-            "dest": "/dist/_expo/$1"
-        },
-        {
-            "src": "/favicon.ico",
-            "dest": "/dist/favicon.ico"
-        },
-        {
-            "src": "/manifest.json",
-            "dest": "/dist/manifest.json"
-        },
-        {
-            "src": "/icon.png",
-            "dest": "/dist/icon.png"
-        },
-        {
-            "src": "/sw.js",
-            "dest": "/dist/sw.js"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/dist/index.html"
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ]
 }
