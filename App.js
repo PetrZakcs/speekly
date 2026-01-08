@@ -2503,7 +2503,7 @@ const SYSTEM_API_KEY = "backend";
 
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
-export default function App() {
+function MainApp() {
   // --- STATE ---
   const [activeTab, setActiveTab] = useState('home'); // home | relax | practice | settings | sos | auth
   const [user, setUser] = useState(null);
@@ -2927,3 +2927,40 @@ const styles = StyleSheet.create({
   langText: { color: COLORS.TEXT_WHITE },
   apiKeyInput: { backgroundColor: '#0A1C18', color: COLORS.TEXT_WHITE, padding: 12, borderRadius: 8, width: '100%', borderWidth: 1, borderColor: COLORS.BG_CARD }
 });
+
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null, stack: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught:', error, errorInfo);
+    this.setState({ stack: errorInfo.componentStack });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, backgroundColor: '#111', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <Text style={{ color: '#FF5555', fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>Application Crashed</Text>
+          <Text style={{ color: '#FFF', textAlign: 'center', marginBottom: 20 }}>{this.state.error?.toString()}</Text>
+          <ScrollView style={{ maxHeight: 200, width: '100%', backgroundColor: '#222', padding: 10 }}>
+            <Text style={{ color: '#AAA', fontFamily: 'monospace', fontSize: 10 }}>{this.state.stack}</Text>
+          </ScrollView>
+          <TouchableOpacity
+            style={{ backgroundColor: '#D4EE9F', padding: 15, borderRadius: 10, marginTop: 20 }}
+            onPress={() => window.location.reload()}
+          >
+            <Text style={{ fontWeight: 'bold', color: '#000' }}>Reload App</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <MainApp />
+    </ErrorBoundary>
+  );
+}
