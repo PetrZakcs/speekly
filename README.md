@@ -19,35 +19,8 @@ A modern AI-powered speech therapy application built with Expo/React Native.
 - **Payments**: Stripe Checkout
 - **AI**: OpenAI GPT-3.5
 
-## ⚙️ Environment Variables
 
-Set these in your Vercel Dashboard → Settings → Environment Variables:
 
-### Required
-```
-OPENAI_API_KEY=sk-your-openai-key
-STRIPE_SECRET_KEY=sk_live_your-stripe-key  (or sk_test_ for testing)
-STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
-EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_KEY=your-anon-key
-```
-
-## 🗄️ Database Setup (Supabase)
-
-1. Create a new Supabase project at https://supabase.com
-2. Go to SQL Editor
-3. Run the SQL from `database/schema.sql`
-4. Copy your project URL and anon key to environment variables
-
-## 💳 Stripe Setup
-
-1. Create a Stripe account at https://stripe.com
-2. Get your Secret Key from Developers → API Keys
-3. Set up webhook:
-   - Go to Developers → Webhooks
-   - Add endpoint: `https://your-domain.vercel.app/api/webhook`
-   - Select events: `checkout.session.completed`, `payment_intent.payment_failed`
-   - Copy the webhook secret to `STRIPE_WEBHOOK_SECRET`
 
 ## 🏃 Local Development
 
