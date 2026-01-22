@@ -99,16 +99,7 @@ const DICTIONARY = {
     add_custom: 'Přidat vlastní metodu',
     tmj_warning: '⚠️ Pozor: Buďte opatrní, pokud máte problémy s čelistním kloubem (TMJ).', // New
     disclaimer: 'Tato aplikace nenahrazuje klinickou péči. Slouží k tréninku, ne k léčbě.', // New
-    // Checkout
-    checkout_title: 'Bezpečná platba',
-    back_home: 'Zpět domů',
-    order_sum: 'Shrnutí objednávky',
-    plan_name: 'Doživotní Plán',
-    one_time: 'Jednorázová platba. Žádné poplatky.',
-    create_acc: 'Vytvořit účet',
-    pay_method: 'Platební metoda',
-    pay_btn: 'Zaplatit $100 přes Stripe',
-    redirect_note: 'Budete přesměrováni na bránu Stripe',
+
   },
   en: {
     hello: 'Hello',
@@ -156,16 +147,7 @@ const DICTIONARY = {
     add_custom: 'Add Your Own Method',
     tmj_warning: '⚠️ Caution: Be gentle if you have TMJ (Jaw Joint) issues.', // New
     disclaimer: 'This app is not a replacement for clinical therapy. It is a training tool.', // New
-    // Checkout
-    checkout_title: 'Secure Checkout',
-    back_home: 'Back to Home',
-    order_sum: 'Order Summary',
-    plan_name: 'Lifetime Therapy Plan',
-    one_time: 'Onetime payment. No recurring fees.',
-    create_acc: 'Create Account',
-    pay_method: 'Payment Method',
-    pay_btn: 'Pay $100 with Stripe',
-    redirect_note: 'You will be redirected to secure Stripe Checkout',
+
   }
 };
 
@@ -580,24 +562,7 @@ const LandingScreen = ({ t, onGetStarted }) => {
           </ScrollView>
         </View>
 
-        {/* 5. Lifetime Offer */}
-        <View style={[styles.offerContainer, isDesktop && { maxWidth: 600, alignSelf: 'center' }]}>
-          <View style={styles.offerBadge}><Text style={styles.offerBadgeText}>LIMITED TIME OFFER</Text></View>
-          <Text style={styles.offerTitle}>Lifetime Therapy</Text>
-          <Text style={styles.offerPrice}>$100 <Text style={styles.offerOriginal}>/ one-time</Text></Text>
 
-          <View style={styles.checkList}>
-            <Text style={styles.checkItem}>✅ Unlimited AI Therapy Sessions</Text>
-            <Text style={styles.checkItem}>✅ Private & Secure Environment</Text>
-            <Text style={styles.checkItem}>✅ Advanced Progress Tracking</Text>
-            <Text style={styles.checkItem}>✅ Fraction of the cost of real therapy</Text>
-          </View>
-
-          <TouchableOpacity style={styles.offerButton} onPress={onGetStarted}>
-            <Text style={styles.offerButtonText}>Get Lifetime Access Now</Text>
-          </TouchableOpacity>
-          <Text style={styles.guarantee}>30-day money-back guarantee</Text>
-        </View>
 
         <View style={{ height: 50 }} />
       </View>
@@ -633,231 +598,7 @@ const Navbar = ({ activeTab, onTabChange, t }) => (
 
 // --- SCREENS ---
 
-const CheckoutScreen = ({ t, onComplete, onBack }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState('');
-  const [isLoginMode, setIsLoginMode] = useState(false); // Toggle between signup and login
-  const { width } = Dimensions.get('window');
-  const isDesktop = width > 800;
 
-  // Form State
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handlePay = async () => {
-    // Validate inputs
-    if (!email || !email.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-    if (!password || password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
-
-    setIsProcessing(true);
-    setError('');
-
-    // ADMIN BYPASS - Owner gets instant access without auth
-    const ADMIN_EMAILS = ['petrzak.ig@seznam.cz'];
-    if (ADMIN_EMAILS.includes(email.toLowerCase())) {
-      await AsyncStorage.setItem('is_premium', 'true');
-      Alert.alert('👑 Welcome!', 'You have full premium access.');
-      setIsProcessing(false);
-      onComplete();
-      return;
-    }
-
-    try {
-      if (isLoginMode) {
-        // LOGIN MODE - For existing users
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-
-        if (authError) {
-          throw new Error(authError.message);
-        }
-
-        // Check if user is premium
-        const { data: profile } = await supabase.from('profiles').select('is_premium').eq('id', authData.user.id).single();
-
-        if (profile?.is_premium) {
-          // Already premium - go to app
-          await AsyncStorage.setItem('is_premium', 'true');
-          Alert.alert('Welcome back!', 'You already have premium access.');
-          onComplete();
-          return;
-        }
-        // Not premium yet - continue to payment
-      } else {
-        // SIGNUP MODE - Create new account
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email,
-          password
-        });
-
-        if (authError && !authError.message.includes('already registered')) {
-          throw new Error(authError.message);
-        }
-      }
-
-      // 2. Call our Stripe checkout API
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      if (data.url) {
-        // 3. Redirect to Stripe Checkout
-        if (Platform.OS === 'web') {
-          window.location.href = data.url;
-        } else {
-          Linking.openURL(data.url);
-        }
-      } else {
-        throw new Error('No checkout URL received');
-      }
-
-    } catch (err) {
-      console.error('Checkout error:', err);
-      setError(err.message || 'Payment failed. Please try again.');
-      Alert.alert('Error', err.message || 'Something went wrong. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  return (
-    <ScrollView style={styles.screenScroll}>
-      <View style={{ maxWidth: 1000, alignSelf: 'center', width: '100%', paddingBottom: 50 }}>
-
-        {/* Navigation */}
-        <TouchableOpacity onPress={onBack} style={{ marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 18, marginRight: 5 }}>←</Text>
-          <Text style={{ color: COLORS.TEXT_SEC, fontSize: 16 }}>{t('back_home')}</Text>
-        </TouchableOpacity>
-
-        <Text style={[styles.headerTitle, { marginBottom: 10 }]}>{t('checkout_title')}</Text>
-
-        <View style={isDesktop ? { flexDirection: 'row', gap: 40, alignItems: 'flex-start' } : {}}>
-
-          {/* Left Column: Order Summary (Desktop) */}
-          <View style={isDesktop ? { flex: 1 } : { marginBottom: 30 }}>
-            <View style={{ backgroundColor: '#11221E', padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#2D4F44' }}>
-              <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12, textTransform: 'uppercase', fontWeight: 'bold', marginBottom: 15 }}>{t('order_sum')}</Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-                <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 18, fontWeight: 'bold' }}>{t('plan_name')}</Text>
-                <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 18 }}>$100.00</Text>
-              </View>
-              <Text style={{ color: COLORS.TEXT_SEC, marginBottom: 20 }}>{t('one_time')}</Text>
-
-              <View style={{ height: 1, backgroundColor: '#2D4F44', marginBottom: 20 }} />
-
-              <Text style={{ color: COLORS.ACCENT_LIME, marginBottom: 5 }}>✅ Unlimited AI Access</Text>
-              <Text style={{ color: COLORS.ACCENT_LIME, marginBottom: 5 }}>✅ Speech Pattern Analysis</Text>
-              <Text style={{ color: COLORS.ACCENT_LIME, marginBottom: 5 }}>✅ Future V2 Updates Included</Text>
-            </View>
-
-            {isDesktop && (
-              <View style={{ marginTop: 20, flexDirection: 'row', gap: 10, opacity: 0.6 }}>
-                <Text style={{ fontSize: 24 }}>🔒</Text>
-                <Text style={{ color: COLORS.TEXT_SEC, flex: 1, fontSize: 12 }}>Payments are securely processed by Stripe. We do not store your credit card details.</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Right Column: Payment Form */}
-          <View style={isDesktop ? { flex: 1 } : {}}>
-            <View style={styles.checkoutCard}>
-
-              {/* Login/Signup Toggle */}
-              <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', padding: 4, borderRadius: 12, marginBottom: 20 }}>
-                <TouchableOpacity
-                  style={{ flex: 1, padding: 12, alignItems: 'center', borderRadius: 8, backgroundColor: !isLoginMode ? COLORS.ACCENT_LIME : 'transparent' }}
-                  onPress={() => setIsLoginMode(false)}
-                >
-                  <Text style={{ fontWeight: 'bold', color: !isLoginMode ? COLORS.BG_DARK : COLORS.TEXT_SEC }}>New Account</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{ flex: 1, padding: 12, alignItems: 'center', borderRadius: 8, backgroundColor: isLoginMode ? COLORS.ACCENT_LIME : 'transparent' }}
-                  onPress={() => setIsLoginMode(true)}
-                >
-                  <Text style={{ fontWeight: 'bold', color: isLoginMode ? COLORS.BG_DARK : COLORS.TEXT_SEC }}>I Have Account</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.inputLabel}>{isLoginMode ? 'Sign In' : t('create_acc')}</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Email address"
-                placeholderTextColor="#556"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder={isLoginMode ? "Your password" : "Choose Password (min 6 chars)"}
-                secureTextEntry
-                placeholderTextColor="#556"
-                value={password}
-                onChangeText={setPassword}
-              />
-
-              {error ? (
-                <Text style={{ color: COLORS.ACCENT_ORANGE, marginBottom: 10, textAlign: 'center' }}>{error}</Text>
-              ) : null}
-
-              <Text style={styles.inputLabel}>{t('pay_method')}</Text>
-
-              <TouchableOpacity
-                style={{
-                  backgroundColor: isProcessing ? '#4a4a8f' : '#635BFF',
-                  paddingVertical: 18,
-                  borderRadius: 12,
-                  alignItems: 'center',
-                  marginBottom: 20,
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 10,
-                  opacity: isProcessing ? 0.7 : 1
-                }}
-                onPress={handlePay}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>Processing...</Text>
-                ) : (
-                  <>
-                    <Text style={{ fontSize: 20 }}>💳</Text>
-                    <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>
-                      {isLoginMode ? 'Sign In' : t('pay_btn')}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
-                <Text style={{ fontSize: 12, color: COLORS.TEXT_SEC }}>🔒 {t('redirect_note')}</Text>
-              </View>
-            </View>
-          </View>
-
-        </View>
-      </View>
-    </ScrollView>
-  );
-};
 
 
 // --- ONBOARDING QUESTIONNAIRE ---
@@ -2333,45 +2074,14 @@ const SosScreen = ({ t, onExit }) => {
 };
 
 const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset, user, onLogin }) => {
-  const [isPremium, setIsPremium] = useState(false);
-
-  useEffect(() => {
-    const checkPremium = async () => {
-      const premium = await AsyncStorage.getItem('is_premium');
-      setIsPremium(premium === 'true');
-    };
-    checkPremium();
-  }, []);
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    await AsyncStorage.removeItem('is_premium');
     Alert.alert('Signed Out', 'You have been signed out.');
   };
 
   return (
     <ScrollView style={styles.screenScroll}>
       <Text style={styles.headerTitle}>{t('settings')}</Text>
-
-      {/* Premium Status Banner */}
-      {isPremium && (
-        <View style={{
-          backgroundColor: 'rgba(212,238,159,0.15)',
-          padding: 16,
-          borderRadius: 12,
-          marginBottom: 20,
-          borderWidth: 1,
-          borderColor: COLORS.ACCENT_LIME,
-          flexDirection: 'row',
-          alignItems: 'center'
-        }}>
-          <Text style={{ fontSize: 28, marginRight: 12 }}>👑</Text>
-          <View>
-            <Text style={{ color: COLORS.ACCENT_LIME, fontSize: 18, fontWeight: 'bold' }}>Premium Active</Text>
-            <Text style={{ color: COLORS.TEXT_SEC, fontSize: 12 }}>Lifetime access • All features unlocked</Text>
-          </View>
-        </View>
-      )}
 
       {/* Account Section */}
       <Text style={styles.sectionLabel}>Account / Účet</Text>
@@ -2394,11 +2104,6 @@ const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset, 
               <Text style={{ color: COLORS.TEXT_SEC, fontWeight: '600' }}>Sign Out</Text>
             </TouchableOpacity>
           </>
-        ) : isPremium ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ fontSize: 24, marginRight: 10 }}>✅</Text>
-            <Text style={{ color: COLORS.TEXT_WHITE, fontSize: 16 }}>Premium Access Active</Text>
-          </View>
         ) : (
           <>
             <Text style={{ color: COLORS.TEXT_SEC, marginBottom: 12 }}>Sync your progress across devices.</Text>
@@ -2437,10 +2142,6 @@ const SettingsScreen = ({ t, language, setLanguage, apiKey, setApiKey, onReset, 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
           <Text style={{ color: COLORS.TEXT_SEC }}>Version</Text>
           <Text style={{ color: COLORS.TEXT_WHITE }}>1.0.0</Text>
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-          <Text style={{ color: COLORS.TEXT_SEC }}>Status</Text>
-          <Text style={{ color: COLORS.ACCENT_LIME }}>{isPremium ? '✅ Premium' : '🔒 Free'}</Text>
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text style={{ color: COLORS.TEXT_SEC }}>Support</Text>
@@ -2520,39 +2221,15 @@ function MainApp() {
     const load = async () => {
       const l = await AsyncStorage.getItem('language');
       const k = await AsyncStorage.getItem('openai_key');
-      const isPremium = await AsyncStorage.getItem('is_premium');
 
       // Load Streak
       const s = await AsyncStorage.getItem('user_streak');
-      const lastDate = await AsyncStorage.getItem('last_practice_date');
 
       // Basic Streak Validation logic (visual only for now, logic on update)
       if (s) setStreak(parseInt(s));
 
       if (l) setLanguage(l);
       if (k) setApiKey(k);
-
-      // Check for payment success from URL (Stripe redirect)
-      if (Platform.OS === 'web') {
-        const urlParams = new URLSearchParams(window.location.search);
-        const paymentStatus = urlParams.get('payment');
-        const sessionId = urlParams.get('session_id');
-
-        if (paymentStatus === 'success') {
-          // Payment successful - unlock premium
-          await AsyncStorage.setItem('is_premium', 'true');
-          setCurrentScreen('app');
-          Alert.alert('🎉 Payment Successful!', 'Welcome to Speekly Premium! You now have unlimited access.');
-          // Clean URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-          setIsReady(true);
-          return;
-        } else if (paymentStatus === 'canceled') {
-          // Payment was canceled
-          Alert.alert('Payment Canceled', 'Your payment was canceled. You can try again anytime.');
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-      }
 
       // Load onboarding data
       const onboardingComplete = await AsyncStorage.getItem('onboarding_complete');
@@ -2561,14 +2238,12 @@ function MainApp() {
         setUserProfile(JSON.parse(savedProfile));
       }
 
-      // Auto-Login if Premium
-      if (isPremium === 'true') {
-        // Check if onboarding is needed
-        if (onboardingComplete !== 'true') {
-          setCurrentScreen('onboarding');
-        } else {
-          setCurrentScreen('app');
-        }
+      // Check Session
+      const { data: { session } } = await supabase.auth.getSession();
+
+      // If onboarding is done AND user is logged in, go to app
+      if (onboardingComplete === 'true' && session?.user) {
+        setCurrentScreen('app');
       }
 
       setIsReady(true);
@@ -2576,15 +2251,21 @@ function MainApp() {
     load();
   }, []);
 
-  const goToCheckout = () => {
-    setCurrentScreen('checkout');
-  };
-
-  const finishCheckout = async () => {
-    await AsyncStorage.setItem('is_premium', 'true');
+  const handleGetStarted = async () => {
     await AsyncStorage.setItem('has_seen_landing', 'true');
-    // Go to onboarding for new users
-    setCurrentScreen('onboarding');
+
+    if (user) {
+      // User is logged in
+      const hasOnboarded = await AsyncStorage.getItem('onboarding_complete');
+      if (hasOnboarded === 'true') {
+        setCurrentScreen('app');
+      } else {
+        setCurrentScreen('onboarding');
+      }
+    } else {
+      // Force Auth
+      setCurrentScreen('auth');
+    }
   };
 
   const handleOnboardingComplete = (answers) => {
@@ -2682,18 +2363,7 @@ function MainApp() {
         <StatusBar style="light" />
         <Analytics />
         <SafeAreaView style={styles.safeArea}>
-          <LandingScreen t={t} onGetStarted={goToCheckout} />
-        </SafeAreaView>
-      </MobileContainer>
-    );
-  }
-
-  if (currentScreen === 'checkout') {
-    return (
-      <MobileContainer fullWidth={true}>
-        <StatusBar style="light" />
-        <SafeAreaView style={styles.safeArea}>
-          <CheckoutScreen t={t} onComplete={finishCheckout} onBack={() => setCurrentScreen('landing')} />
+          <LandingScreen t={t} onGetStarted={handleGetStarted} />
         </SafeAreaView>
       </MobileContainer>
     );
@@ -2710,8 +2380,28 @@ function MainApp() {
     );
   }
 
+  if (currentScreen === 'auth') {
+    return (
+      <MobileContainer fullWidth={true}>
+        <StatusBar style="light" />
+        <SafeAreaView style={styles.safeArea}>
+          <AuthScreen
+            t={t}
+            colors={COLORS}
+            onLoginSuccess={async () => {
+              const hasOnboarded = await AsyncStorage.getItem('onboarding_complete');
+              if (hasOnboarded === 'true') setCurrentScreen('app');
+              else setCurrentScreen('onboarding');
+            }}
+            onCancel={() => setCurrentScreen('landing')}
+          />
+        </SafeAreaView>
+      </MobileContainer>
+    );
+  }
+
   const handleReset = async () => {
-    await AsyncStorage.removeItem('is_premium');
+    // await AsyncStorage.removeItem('is_premium'); // Not needed anymore
     await AsyncStorage.removeItem('onboarding_complete');
     await AsyncStorage.removeItem('onboarding_answers');
     setCurrentScreen('landing');
@@ -2793,25 +2483,10 @@ const styles = StyleSheet.create({
   reviewAuthor: { color: COLORS.ACCENT_LIME, fontSize: 12, fontWeight: 'bold', marginTop: 4 },
 
   // Offer Section
-  offerContainer: { margin: 24, padding: 30, backgroundColor: 'linear-gradient(180deg, #1A382F 0%, #0F2822 100%)', borderRadius: 24, alignItems: 'center', borderWidth: 1, borderColor: COLORS.ACCENT_LIME, shadowColor: COLORS.ACCENT_LIME, shadowOpacity: 0.1, shadowRadius: 20 },
-  offerBadge: { backgroundColor: COLORS.ACCENT_LIME, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8, marginBottom: 20 },
-  offerBadgeText: { color: '#0F2822', fontWeight: 'bold', fontSize: 12 },
-  offerTitle: { fontSize: 32, fontWeight: 'bold', color: COLORS.TEXT_WHITE, marginBottom: 10 },
-  offerPrice: { fontSize: 48, fontWeight: 'bold', color: COLORS.TEXT_WHITE, marginBottom: 30 },
-  offerOriginal: { fontSize: 16, color: COLORS.TEXT_SEC, fontWeight: 'normal' },
 
-  checkList: { alignSelf: 'flex-start', marginBottom: 30 },
-  checkItem: { color: COLORS.TEXT_WHITE, fontSize: 16, marginBottom: 12 },
-
-  offerButton: { backgroundColor: COLORS.ACCENT_LIME, paddingVertical: 18, width: '100%', borderRadius: 12, alignItems: 'center', marginBottom: 16 },
-  offerButtonText: { color: '#0F2822', fontWeight: 'bold', fontSize: 18 },
-  guarantee: { color: COLORS.TEXT_SEC, fontSize: 12 },
 
   // Checkout & Forms
-  checkoutCard: { backgroundColor: '#1A382F', padding: 24, borderRadius: 16 },
-  input: { backgroundColor: '#11221E', color: COLORS.TEXT_WHITE, padding: 16, borderRadius: 12, marginBottom: 16, fontSize: 16, borderWidth: 1, borderColor: '#2D4F44' },
-  inputLabel: { color: COLORS.ACCENT_LIME, fontSize: 12, fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase' },
-  cardRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#11221E', borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: '#2D4F44' },
+
 
   // Install Banner
   installBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2D4F44', padding: 16, margin: 20, borderRadius: 12, marginBottom: 10 },
@@ -2895,7 +2570,7 @@ const styles = StyleSheet.create({
   timerControls: { flexDirection: 'row', gap: 20 },
   playButton: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.ACCENT_LIME, alignItems: 'center', justifyContent: 'center' },
   playIcon: { fontSize: 24, color: COLORS.TEXT_DARK },
-  resetButton: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#2D1F1C', alignItems: 'center', justifyContent: 'center' }, // Dark reddish brown for reset 
+  resetButton: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#2D1F1C', alignItems: 'center', justifyContent: 'center' }, // Dark reddish brown for reset
   resetIcon: { fontSize: 24, color: COLORS.ACCENT_ORANGE },
 
   // Tips Box

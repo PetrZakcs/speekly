@@ -43,7 +43,7 @@ const AuthScreen = ({ t, onLoginSuccess, onCancel, colors }) => {
 
     return (
         <ScrollView contentContainerStyle={{ padding: 24, justifyContent: 'center', flexGrow: 1 }}>
-            <Text style={{ fontSize: 32, fontWeight: 'bold', color: COLORS.TEXT_DARK || '#000', marginBottom: 8, textAlign: 'center' }}>
+            <Text style={{ fontSize: 32, fontWeight: 'bold', color: COLORS.TEXT_WHITE || '#FFF', marginBottom: 8, textAlign: 'center' }}>
                 {isLogin ? 'Welcome Back' : 'Create Account'}
             </Text>
             <Text style={{ fontSize: 16, color: COLORS.TEXT_SEC || '#666', marginBottom: 32, textAlign: 'center' }}>
@@ -52,12 +52,13 @@ const AuthScreen = ({ t, onLoginSuccess, onCancel, colors }) => {
 
             <View style={{ gap: 16, maxWidth: 400, width: '100%', alignSelf: 'center' }}>
                 <View>
-                    <Text style={{ marginBottom: 6, fontWeight: '600', color: COLORS.TEXT_DARK }}>Email</Text>
+                    <Text style={{ marginBottom: 6, fontWeight: '600', color: COLORS.TEXT_WHITE || '#FFF' }}>Email</Text>
                     <TextInput
                         style={{
-                            backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', borderRadius: 12, padding: 16, fontSize: 16
+                            backgroundColor: '#11221E', color: '#FFF', borderWidth: 1, borderColor: '#2D4F44', borderRadius: 12, padding: 16, fontSize: 16
                         }}
                         placeholder="hello@example.com"
+                        placeholderTextColor="#556"
                         value={email}
                         onChangeText={setEmail}
                         autoCapitalize="none"
@@ -65,12 +66,13 @@ const AuthScreen = ({ t, onLoginSuccess, onCancel, colors }) => {
                     />
                 </View>
                 <View>
-                    <Text style={{ marginBottom: 6, fontWeight: '600', color: COLORS.TEXT_DARK }}>Password</Text>
+                    <Text style={{ marginBottom: 6, fontWeight: '600', color: COLORS.TEXT_WHITE || '#FFF' }}>Password</Text>
                     <TextInput
                         style={{
-                            backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', borderRadius: 12, padding: 16, fontSize: 16
+                            backgroundColor: '#11221E', color: '#FFF', borderWidth: 1, borderColor: '#2D4F44', borderRadius: 12, padding: 16, fontSize: 16
                         }}
                         placeholder="••••••••"
+                        placeholderTextColor="#556"
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry
