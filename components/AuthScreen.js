@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 const AuthScreen = ({ t, onLoginSuccess, onCancel, colors }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
     const [loading, setLoading] = useState(false);
     const [isLogin, setIsLogin] = useState(true);
 
@@ -25,7 +26,15 @@ const AuthScreen = ({ t, onLoginSuccess, onCancel, colors }) => {
                 const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
                 error = signInError;
             } else {
-                const { error: signUpError } = await supabase.auth.signUp({ email, password });
+                const { error: signUpError } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: name,
+                        }
+                    }
+                });
                 error = signUpError;
             }
         } catch (e) {
@@ -65,6 +74,22 @@ const AuthScreen = ({ t, onLoginSuccess, onCancel, colors }) => {
                         keyboardType="email-address"
                     />
                 </View>
+
+                {!isLogin && (
+                    <View>
+                        <Text style={{ marginBottom: 6, fontWeight: '600', color: COLORS.TEXT_WHITE || '#FFF' }}>Name / Přezdívka</Text>
+                        <TextInput
+                            style={{
+                                backgroundColor: '#11221E', color: '#FFF', borderWidth: 1, borderColor: '#2D4F44', borderRadius: 12, padding: 16, fontSize: 16
+                            }}
+                            placeholder="Jak vás máme oslovovat?"
+                            placeholderTextColor="#556"
+                            value={name}
+                            onChangeText={setName}
+                        />
+                    </View>
+                )}
+
                 <View>
                     <Text style={{ marginBottom: 6, fontWeight: '600', color: COLORS.TEXT_WHITE || '#FFF' }}>Password</Text>
                     <TextInput
